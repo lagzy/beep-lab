@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>BEEP//1 — 1-bit Beeper Studio for ESP32</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23fff'/%3E%3Cpath d='M0 11h3V5h3v6h4V5h3v6h3' stroke='%23111' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/space-mono/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/vt323/index.css">
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
+<style>
+:root{
+  --ink:#111111; --paper:#ffffff; --bg:#e9e9e5; --line:#dedbd5; --mute:#7c7a74;
+  --acc:#e23d28; --soft:#f4f4f1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:12px; -webkit-font-smoothing:none;
+  padding:14px 14px 40px;
+}
+.wrap{max-width:1240px;margin:0 auto}
+.panel{background:var(--paper);border:2px solid var(--ink);padding:12px}
+.mono-lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+
+/* ---------- HEADER ---------- */
+header{display:flex;align-items:stretch;gap:0;border:2px solid var(--ink);background:var(--paper);margin-bottom:10px}
+.brand{display:flex;align-items:center;gap:10px;padding:10px 14px;border-right:2px solid var(--ink);flex:0 0 auto}
+.mark{width:34px;height:34px;border:2px solid var(--ink);background:#fff;display:block;flex:0 0 auto}
+h1{font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1}
+h1 span{color:var(--acc)}
+.sub{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--mute);margin-top:5px}
+.transport{display:flex;align-items:center;gap:8px;padding:10px 14px;flex:1 1 auto;flex-wrap:wrap}
+.spacer{flex:1 1 auto}
+.lcd{border:2px solid var(--ink);background:var(--ink);color:#fff;padding:5px 12px;min-width:132px;text-align:center}
+.lcd b{font-family:'VT323',monospace;font-size:26px;line-height:1;letter-spacing:.06em;display:block;font-weight:400}
+.lcd i{font-style:normal;font-size:8px;letter-spacing:.16em;color:#9a9a94}
+.lcd.red{background:var(--acc);border-color:var(--acc)}
+
+/* ---------- BUTTONS ---------- */
+button{font-family:inherit;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  border:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:9px 12px;cursor:pointer;
+  transition:none;white-space:nowrap}
+button:hover{background:var(--ink);color:#fff}
+button:active{transform:translate(1px,1px)}
+button.pri{background:var(--ink);color:#fff;min-width:104px}
+button.pri:hover{background:var(--acc);border-color:var(--acc)}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+button.sm{padding:7px 9px;font-size:9px}
+button[disabled]{opacity:.4;cursor:not-allowed}
+.chk{display:flex;align-items:center;gap:6px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  border:2px solid var(--ink);padding:8px 10px;cursor:pointer;user-select:none;background:#fff}
+.chk input{appearance:none;width:12px;height:12px;border:2px solid var(--ink);background:#fff;cursor:pointer}
+.chk input:checked{background:var(--acc);border-color:var(--acc)}
+
+/* ---------- CONTROLS ---------- */
+.controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;padding:11px 14px;margin-bottom:10px}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctl .row{display:flex;align-items:center;gap:8px}
+.ctl output{font-family:'VT323',monospace;font-size:19px;line-height:1;min-width:52px;letter-spacing:.04em}
+input[type=range]{appearance:none;width:120px;height:14px;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:12px;height:16px;background:var(--acc);border:2px solid var(--ink);margin-top:-6px}
+input[type=range]::-moz-range-track{height:4px;background:var(--ink)}
+input[type=range]::-moz-range-thumb{width:10px;height:14px;background:var(--acc);border:2px solid var(--ink);border-radius:0}
+select,input[type=number]{font-family:inherit;font-size:11px;border:2px solid var(--ink);background:#fff;padding:6px 6px;color:var(--ink)}
+input[type=number]{width:56px;text-align:center}
+.grp{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end}
+.sep{width:2px;background:var(--ink);align-self:stretch}
+
+/* ---------- STAGE ---------- */
+.gridwrap{display:flex;align-items:flex-start;border:2px solid var(--ink);background:#fff;overflow:hidden}
+.labels{flex:0 0 auto;border-right:2px solid var(--ink);background:#fff}
+.scroller{flex:1 1 auto;overflow-x:auto;overflow-y:hidden;scrollbar-color:var(--ink) #fff}
+.scroller::-webkit-scrollbar{height:12px}
+.scroller::-webkit-scrollbar-track{background:#fff;border-top:2px solid var(--ink)}
+.scroller::-webkit-scrollbar-thumb{background:var(--ink)}
+canvas{display:block}
+#grid{cursor:crosshair;touch-action:none}
+
+/* ---------- BOTTOM ---------- */
+.bottom{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:11px 14px}
+.status{font-size:10px;letter-spacing:.06em;color:var(--mute);min-height:14px}
+.status b{color:var(--ink);font-weight:700}
+.dl{display:flex;gap:6px;flex-wrap:wrap}
+.codebox{margin-top:10px;border:2px solid var(--ink);background:#0f0f0f;display:none}
+.codebox.open{display:block}
+.codebox .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:2px solid var(--ink);background:#0f0f0f}
+.codebox .bar span{color:#8a8a84;font-size:9px;letter-spacing:.14em;text-transform:uppercase}
+.codebox button{background:#0f0f0f;color:#fff;border-color:#fff;padding:5px 9px;font-size:9px}
+.codebox button:hover{background:#fff;color:#0f0f0f}
+pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-height:1.55;padding:14px;overflow:auto;max-height:330px;white-space:pre;margin:0}
+.hint{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-top:10px;text-align:center;line-height:1.9}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;
+  border:2px solid var(--ink);padding:10px 16px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;z-index:99}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:var(--acc);border-color:var(--acc)}
+@media(max-width:760px){
+  .brand{border-right:none;border-bottom:2px solid var(--ink);width:100%}
+  header{flex-wrap:wrap}
+  input[type=range]{width:88px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 34 34" aria-hidden="true">
+        <rect width="34" height="34" fill="#fff"/>
+        <circle cx="17" cy="17" r="10" fill="none" stroke="#111" stroke-width="2"/>
+        <circle cx="17" cy="17" r="3" fill="#111"/>
+        <path d="M2 12h3v5h3v-8h3v11h3V9h3v16" fill="none" stroke="#111" stroke-width="0"/>
+        <path d="M1 21h3v-8h3v12h3V13" fill="none" stroke="#111" stroke-width="2"/>
+        <path d="M33 13h-3v8h-3V9h-3" fill="none" stroke="#e23d28" stroke-width="2"/>
+      </svg>
+      <div>
+        <h1>BEEP<span>//</span>1</h1>
+        <div class="sub">1-bit beeper studio &middot; esp32 export</div>
+      </div>
+    </div>
+    <div class="transport">
+      <button id="playBtn" class="pri">&#9654; PLAY</button>
+      <button id="stopBtn" class="sm">&#9632; STOP</button>
+      <label class="chk"><input type="checkbox" id="loopChk" checked> LOOP</label>
+      <div class="spacer"></div>
+      <div class="lcd" id="posLcd"><b>01/32</b><i>STEP</i></div>
+      <div class="lcd" id="lenLcd"><b>1.71s</b><i>LENGTH</i></div>
+    </div>
+  </header>
+
+  <div class="panel controls">
+    <div class="ctl">
+      <span class="mono-lbl">Tempo</span>
+      <div class="row"><input type="range" id="bpm" min="40" max="320" value="150"><output id="bpmOut">150 BPM</output></div>
+    </div>
+    <div class="ctl">
+      <span class="mono-lbl">Steps (16th)</span>
+      <div class="row"><select id="steps">
+        <option value="16">16</option><option value="32" selected>32</option><option value="48">48</option>
+        <option value="64">64</option><option value="96">96</option><option value="128">128</option>
+      </select><output id="stepsOut">2 BARS</output></div>
+      <div class="row"><input type="range" id="stepsR" min="1" max="128" step="1" value="32" title="track length"></div>
+    </div>
+    <div class="ctl">
+      <span class="mono-lbl">Note length</span>
+      <div class="row"><input type="range" id="gate" min="5" max="100" value="85"><output id="gateOut">85 %</output></div>
+    </div>
+    <div class="ctl">
+      <span class="mono-lbl">Buzzer type</span>
+      <div class="row"><select id="mode">
+        <option value="active" selected>ACTIVE beeper</option>
+        <option value="passive">PASSIVE piezo</option>
+      </select></div>
+    </div>
+    <div class="ctl">
+      <span class="mono-lbl">Duty / timbre</span>
+      <div class="row"><select id="duty">
+        <option value="0.125">12.5 % thin</option>
+        <option value="0.25">25 % hollow</option>
+        <option value="0.5" selected>50 % square</option>
+        <option value="0.75">75 % fat</option>
+      </select></div>
+    </div>
+    <div class="ctl">
+      <span class="mono-lbl">Volume</span>
+      <div class="row"><input type="range" id="vol" min="0" max="100" value="75"><output id="volOut">75</output></div>
+    </div>
+    <div class="sep"></div>
+    <div class="ctl">
+      <span class="mono-lbl">Buzzer pin</span>
+      <div class="row"><input type="number" id="pin" min="1" max="48" value="4"></div>
+    </div>
+    <div class="sep"></div>
+    <div class="ctl">
+      <span class="mono-lbl">Edit</span>
+      <div class="grp">
+        <button class="sm" id="rotL" title="shift left">&laquo;</button>
+        <button class="sm" id="rotR" title="shift right">&raquo;</button>
+        <button class="sm" id="octD" title="octave down">OCT&minus;</button>
+        <button class="sm" id="octU" title="octave up">OCT+</button>
+        <button class="sm" id="randBtn">DICE</button>
+        <button class="sm" id="demoBtn">DEMO</button>
+        <button class="sm" id="clearBtn">CLEAR</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="gridwrap">
+    <div class="labels"><canvas id="labels"></canvas></div>
+    <div class="scroller" id="scroller"><canvas id="grid"></canvas></div>
+  </div>
+
+  <div class="panel bottom" style="margin-top:10px">
+    <div class="status" id="status">&mdash;</div>
+    <div class="dl">
+      <button id="dlMp3">&#8615; MP3</button>
+      <button id="dlWav">&#8615; WAV</button>
+      <button id="dlIno" class="on">&#8615; ARDUINO .INO</button>
+      <button id="dlJson">&#8615; .JSON</button>
+      <button id="impBtn">&#8613; IMPORT</button>
+      <button id="codeBtn">&lt;/&gt; CODE</button>
+    </div>
+    <input type="file" id="impFile" accept=".json,.ino,.txt" style="display:none">
+  </div>
+
+  <div class="codebox" id="codeBox">
+    <div class="bar"><span id="codeName">beep1_song.ino</span><button id="copyBtn">COPY</button></div>
+    <pre id="codeOut"></pre>
+  </div>
+
+  <div class="hint">
+    click grid = draw &middot; right-click / drag on note = erase &middot; click ruler = set start &middot;
+    <b>SPACE</b> play/stop &middot; <b>&larr;&rarr;</b> move start &middot; <b>L</b> loop &middot; <b>DEL</b> clear
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+/* ============ CONSTANTS ============ */
+const NM   = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const LOW  = 48, HIGH = 84;              // C3 .. C6
+const ROWS = HIGH - LOW + 1;             // 37
+const ROWH = 13, RULERH = 26, LABELW = 64, MAXSTEPS = 128;
+const SR_EXPORT = 44100;
+
+/* ============ STATE ============ */
+const S = { steps:32, bpm:150, gate:.85, duty:.5, vol:.75, pin:4, loop:true, mode:'active' };
+const ACTIVE_FREQ = 2300;   // typical fixed pitch of an active buzzer (Hz)
+let pat   = new Int8Array(MAXSTEPS).fill(-1);
+let cellW = 22;
+let hover = null, cursorStep = 0, playStep = -1;
+let painting = null, playing = false;
+
+/* ============ DOM ============ */
+const $ = id => document.getElementById(id);
+const gc = $('grid'), lc = $('labels'), sc = $('scroller');
+const g = gc.getContext('2d'), L = lc.getContext('2d');
+const statusEl = $('status'), posLcd = $('posLcd').firstElementChild, lenLcd = $('lenLcd').firstElementChild;
+
+/* ============ HELPERS ============ */
+const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
+const noteName = m => NM[m % 12] + (Math.floor(m / 12) - 1);
+const stepSec  = () => 60 / S.bpm / 4;
+const clampM   = m => Math.max(LOW, Math.min(HIGH, m));
+const pad2     = n => String(n).padStart(2, '0');
+
+function toast(msg, err){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.className = 'toast', 1900);
+}
+
+/* ============ RENDER AUDIO (true 1-bit) ============ */
+function renderAudio(sampleRate, vol){
+  if (vol === undefined) vol = S.vol;
+  const ss   = stepSec();
+  const total = ss * S.steps;
+  const len  = Math.max(8, Math.ceil(total * sampleRate));
+  const out  = new Float32Array(len);
+  const gateOn = ss * S.gate;
+  let ph = 0, lastStep = -1;
+  for (let i = 0; i < len; i++){
+    const t = i / sampleRate;
+    let s = Math.floor(t / ss); if (s >= S.steps) s = S.steps - 1;
+    const m = pat[s];
+    let v = 0;
+    if (m >= 0 && (t - s * ss) < gateOn){
+      if (s !== lastStep) ph = 0;                 // re-articulate every step
+      const f = S.mode === 'active' ? ACTIVE_FREQ : midiFreq(m);
+      ph += f / sampleRate;
+      if (ph >= 1) ph -= Math.floor(ph);
+      v = (ph < S.duty) ? 1 : -1;                 // hard 1-bit, no smoothing
+    }
+    lastStep = s;
+    out[i] = v * 0.45 * vol;
+  }
+  return out;
+}
+
+/* ============ AUDIO PLAYBACK ============ */
+let ac = null, src = null, buf = null, tStart = 0, tOffset = 0, master = null;
+
+function ensureCtx(){
+  if (!ac){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    ac = new AC();
+    master = ac.createGain();
+    master.gain.value = S.vol;
+    master.connect(ac.destination);
+  }
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+
+function blip(midi, dur){
+  dur = dur || .11;
+  try{
+    ensureCtx();
+    const sr = ac.sampleRate, n = Math.max(8, Math.floor(dur * sr));
+    const b = ac.createBuffer(1, n, sr), d = b.getChannelData(0);
+    const f = S.mode === 'active' ? ACTIVE_FREQ : midiFreq(midi); let ph = 0;
+    for (let i = 0; i < n; i++){
+      ph += f / sr; if (ph >= 1) ph -= 1;
+      const atk = Math.min(1, i / (sr * .004));
+      const rel = i > n - sr * .012 ? Math.max(0, 1 - (i - (n - sr * .012)) / (sr * .012)) : 1;
+      d[i] = ((ph < S.duty) ? 1 : -1) * .35 * S.vol * atk * rel;
+    }
+    const s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination); s.start();
+  }catch(e){}
+}
+
+function play(){
+  stop(true);
+  ensureCtx();
+  if (master) master.gain.value = S.vol;
+  const data = renderAudio(ac.sampleRate, 1);   // unity gain, volume via master
+  buf = ac.createBuffer(1, data.length, ac.sampleRate);
+  buf.copyToChannel(data, 0);
+  src = ac.createBufferSource();
+  src.buffer = buf;
+  src.loop = S.loop;
+  tOffset = cursorStep * stepSec();
+  if (src.loop){ src.loopStart = 0; src.loopEnd = buf.duration; }
+  src.connect(master || ac.destination);
+  tStart = ac.currentTime + .03;
+  src.start(tStart, tOffset);
+  src.onended = () => { if (playing && !S.loop){ playing = false; playStep = -1; syncTransport(); } };
+  playing = true;
+  syncTransport();
+}
+function stop(keepCursor){
+  if (src){ try{ src.onended = null; src.stop(); }catch(e){} src.disconnect(); src = null; }
+  playing = false; playStep = -1;
+  if (!keepCursor) cursorStep = 0;
+  syncTransport();
+  drawGrid();
+}
+function togglePlay(){
+  if (playing){ if (playStep >= 0) cursorStep = playStep; stop(true); }
+  else play();
+}
+function syncTransport(){
+  $('playBtn').innerHTML = playing ? '&#10074;&#10074; PAUSE' : '&#9654; PLAY';
+  $('playBtn').classList.toggle('on', playing);
+}
+
+/* ============ PLAYHEAD LOOP ============ */
+function tick(){
+  if (playing && ac && buf){
+    let el = ac.currentTime - tStart + tOffset;
+    if (el < 0) el = 0;
+    const d = buf.duration;
+    if (S.loop){ if (el >= d) el = (el - d) % d; }
+    else if (el > d) el = d;
+    const s = Math.min(S.steps - 1, Math.max(0, Math.floor(el / stepSec())));
+    if (s !== playStep){
+      playStep = s;
+      const x = s * cellW, sl = sc.scrollLeft, sw = sc.clientWidth;
+      if (x < sl + 10 || x > sl + sw - 40) sc.scrollLeft = Math.max(0, x - sw * .35);
+    }
+  }
+  drawGrid();
+  updateLcd();
+  requestAnimationFrame(tick);
+}
+function updateLcd(){
+  posLcd.textContent = pad2((playing ? playStep : cursorStep) + 1) + '/' + S.steps;
+  $('posLcd').classList.toggle('red', playing);
+}
+
+/* ============ DRAW ============ */
+function layout(){
+  const avail = sc.clientWidth || 600;
+  cellW = Math.max(11, Math.min(40, Math.floor((avail - 2) / S.steps)));
+  const H = RULERH + ROWS * ROWH;
+  lc.style.height = H + 'px'; lc.style.width = LABELW + 'px';
+  gc.style.height = H + 'px'; gc.style.width = (cellW * S.steps) + 'px';
+  drawLabels();
+}
+function sized(cv, ctx2, w, h){
+  const dpr = window.devicePixelRatio || 1;
+  const W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawLabels(){
+  const H = RULERH + ROWS * ROWH;
+  sized(lc, L, LABELW, H);
+  L.clearRect(0, 0, LABELW, H);
+  L.fillStyle = '#fff'; L.fillRect(0, 0, LABELW, RULERH);
+  L.fillStyle = '#111'; L.fillRect(0, RULERH - 2, LABELW, 2);
+  L.font = '700 9px "Space Mono",monospace'; L.textAlign = 'left'; L.textBaseline = 'middle';
+  L.fillText('NOTE', 6, RULERH / 2);
+  for (let r = 0; r < ROWS; r++){
+    const m = HIGH - r, y = RULERH + r * ROWH;
+    const nm = NM[m % 12], oct = Math.floor(m / 12) - 1, black = nm.indexOf('#') > -1;
+    L.fillStyle = black ? '#ececea' : '#fff';
+    L.fillRect(0, y, LABELW, ROWH);
+    L.fillStyle = '#e4e2dc'; L.fillRect(0, y + ROWH - 1, LABELW, 1);
+    if (m % 12 === 0){ L.fillStyle = '#111'; L.fillRect(0, y - 1, LABELW, 1); }
+    L.fillStyle = black ? '#111' : '#fff';
+    L.fillRect(LABELW - 12, y + 2, 10, ROWH - 5);
+    L.fillStyle = black ? '#fff' : '#111';
+    L.fillRect(LABELW - 12, y + 2, black ? 5 : 10, ROWH - 5);
+    L.fillStyle = black ? '#94918a' : '#111';
+    L.font = (m % 12 === 0 ? '700 ' : '') + '9px "Space Mono",monospace';
+    L.fillText(nm + (m % 12 === 0 ? oct : ''), 6, y + ROWH / 2 + .5);
+  }
+}
+function drawGrid(){
+  const W = cellW * S.steps, H = RULERH + ROWS * ROWH;
+  sized(gc, g, W, H);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+
+  /* row bands */
+  for (let r = 0; r < ROWS; r++){
+    const m = HIGH - r;
+    if (NM[m % 12].indexOf('#') > -1){ g.fillStyle = '#f5f5f2'; g.fillRect(0, RULERH + r * ROWH, W, ROWH); }
+  }
+  /* horizontal lines */
+  for (let r = 1; r <= ROWS; r++){
+    const m = HIGH - r + 1;
+    g.fillStyle = (m % 12 === 0) ? '#c9c7c1' : '#e8e7e2';
+    g.fillRect(0, RULERH + r * ROWH - 1, W, 1);
+  }
+  /* vertical step lines */
+  for (let s = 1; s < S.steps; s++){
+    g.fillStyle = (s % 16 === 0) ? '#a5a39c' : (s % 4 === 0) ? '#cfcdd6'.replace('d6','c7') : '#eceae5';
+    g.fillRect(s * cellW, RULERH, 1, H - RULERH);
+  }
+  /* notes */
+  for (let s = 0; s < S.steps; s++){
+    const m = pat[s];
+    if (m < LOW || m > HIGH) continue;
+    const r = HIGH - m, x = s * cellW, y = RULERH + r * ROWH;
+    g.fillStyle = '#111';
+    g.fillRect(x + 1, y + 1, cellW - 2, ROWH - 2);
+    g.fillStyle = '#fff';
+    g.fillRect(x + 2, y + 2, Math.max(1, cellW - 8), 1);
+  }
+  /* playhead */
+  if (playStep >= 0 && playStep < S.steps){
+    g.fillStyle = 'rgba(226,61,40,.13)';
+    g.fillRect(playStep * cellW, RULERH, cellW, H - RULERH);
+    g.fillStyle = '#e23d28';
+    g.fillRect(playStep * cellW, 0, 2, H);
+  }
+  /* cursor */
+  if (!playing){
+    g.fillStyle = '#e23d28';
+    const x = cursorStep * cellW;
+    g.beginPath(); g.moveTo(x, RULERH - 8); g.lineTo(x + 7, RULERH - 1); g.lineTo(x, RULERH - 1); g.closePath(); g.fill();
+  }
+  /* ruler */
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, RULERH - 2);
+  g.fillStyle = '#111'; g.fillRect(0, RULERH - 2, W, 2);
+  g.font = '9px "Space Mono",monospace'; g.textBaseline = 'middle'; g.textAlign = 'left';
+  for (let s = 0; s < S.steps; s++){
+    const x = s * cellW;
+    if (s % 4 !== 0){
+      if (cellW >= 16){ g.fillStyle = '#dcdad4'; g.fillRect(x + Math.floor(cellW / 2), RULERH - 8, 1, 6); }
+      continue;
+    }
+    const cur = (playing ? playStep : -1) === s;
+    if (cur){ g.fillStyle = '#e23d28'; g.fillRect(x + 1, 0, cellW - 1, RULERH - 2); }
+    else if (s === cursorStep){ g.fillStyle = '#f0f0ec'; g.fillRect(x + 1, 0, cellW - 1, RULERH - 2); }
+    g.fillStyle = cur ? '#fff' : (s % 16 === 0 ? '#111' : '#8d8b85');
+    if (cellW >= 22 || s % 16 === 0) g.fillText(String(s / 4 + 1), x + 4, RULERH / 2 - 1);
+    g.fillStyle = cur ? '#fff' : '#111';
+    g.fillRect(x, RULERH - 9, 1, 7);
+  }
+  /* hover */
+  if (hover && !playing){
+    const r = HIGH - hover.m;
+    if (r >= 0 && r < ROWS){
+      g.strokeStyle = '#e23d28'; g.lineWidth = 1;
+      g.strokeRect(hover.s * cellW + 1.5, RULERH + r * ROWH + 1.5, cellW - 3, ROWH - 3);
+    }
+  }
+  g.strokeStyle = '#111'; g.lineWidth = 2;
+  g.strokeRect(1, RULERH + 1, W - 2, H - RULERH - 2);
+}
+
+/* ============ STATUS ============ */
+function updateStatus(){
+  let count = 0;
+  for (let i = 0; i < S.steps; i++) if (pat[i] >= 0) count++;
+  const len = (S.steps * stepSec());
+  lenLcd.textContent = len.toFixed(2) + 's';
+  $('stepsOut').textContent = stepsLabel();
+  let left = 'NOTES <b>' + count + '</b> / ' + S.steps +
+             ' &nbsp;&middot;&nbsp; <b>' + len.toFixed(2) + 's</b>' +
+             ' &nbsp;&middot;&nbsp; ' + (S.mode === 'active'
+               ? 'ACTIVE <b>' + (ACTIVE_FREQ / 1000) + ' kHz</b> FIXED'
+               : 'DUTY <b>' + Math.round(S.duty * 100) + '%</b>');
+  if (hover){
+    if (S.mode === 'active'){
+      left = 'STEP <b>' + pad2(hover.s + 1) + '</b>' +
+             (pat[hover.s] >= 0 ? ' &nbsp;&middot;&nbsp; <b>BEEP</b>' : ' &nbsp;&middot;&nbsp; REST');
+    } else {
+      left = '<b>' + noteName(hover.m) + '</b> &nbsp;' + midiFreq(hover.m).toFixed(1) + ' Hz' +
+             ' &nbsp;&middot;&nbsp; STEP <b>' + pad2(hover.s + 1) + '</b>' +
+             (pat[hover.s] >= 0 ? ' &nbsp;&middot;&nbsp; HELD: ' + noteName(pat[hover.s]) : '');
+    }
+  }
+  statusEl.innerHTML = left;
+}
+
+/* ============ INPUT ============ */
+function cellFrom(ev){
+  const rect = gc.getBoundingClientRect();
+  const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+  const py = (ev.touches ? ev.touches[0].clientY : ev.clientY) - rect.top;
+  const s = Math.floor(px / cellW);
+  const r = Math.floor((py - RULERH) / ROWH);
+  if (s < 0 || s >= S.steps || py < RULERH || r < 0 || r >= ROWS) return null;
+  return { s: s, m: clampM(HIGH - r) };
+}
+function rulerFrom(ev){
+  const rect = gc.getBoundingClientRect();
+  const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+  const s = Math.floor(px / cellW);
+  return (s >= 0 && s < S.steps) ? s : null;
+}
+function applyPaint(c, erase){
+  if (!c) return;
+  if (erase){ if (pat[c.s] < 0) return; pat[c.s] = -1; }
+  else {
+    if (pat[c.s] === c.m) return;   // dragging over the same cell: no-op
+    pat[c.s] = c.m;
+    if (!playing) blip(c.m, .09);   // loop already auditions it while playing
+  }
+  updateStatus(); drawGrid(); buildCode();
+  if (playing) liveRestart();
+}
+gc.addEventListener('contextmenu', e => e.preventDefault());
+
+gc.addEventListener('mousedown', e => {
+  e.preventDefault();
+  if (e.offsetY < RULERH){
+    const s = rulerFrom(e);
+    if (s !== null){ cursorStep = s; if (playing) play(); drawGrid(); }
+    return;
+  }
+  const c = cellFrom(e);
+  if (!c) return;
+  const erase = (e.button === 2) || (pat[c.s] === c.m);
+  painting = { erase: erase };
+  applyPaint(c, erase);
+});
+window.addEventListener('mousemove', e => {
+  const c = cellFrom(e);
+  if (!c){ if (hover){ hover = null; updateStatus(); drawGrid(); } if (!painting) return; }
+  if (c && (!hover || hover.s !== c.s || hover.m !== c.m)){ hover = c; updateStatus(); drawGrid(); }
+  if (painting && c) applyPaint(c, painting.erase);
+});
+window.addEventListener('mouseup', () => { painting = null; });
+gc.addEventListener('mouseleave', () => { hover = null; updateStatus(); drawGrid(); });
+
+gc.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect = gc.getBoundingClientRect();
+  const y = e.touches[0].clientY - rect.top;
+  if (y < RULERH){ const s = rulerFrom(e); if (s !== null){ cursorStep = s; if (playing) play(); drawGrid(); } return; }
+  const c = cellFrom(e); if (!c) return;
+  painting = { erase: pat[c.s] === c.m };
+  applyPaint(c, painting.erase);
+}, { passive:false });
+gc.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const c = cellFrom(e); if (c && painting) applyPaint(c, painting.erase);
+}, { passive:false });
+gc.addEventListener('touchend', () => { painting = null; });
+
+/* ============ CONTROLS ============ */
+function bind(id, fn){ $(id).addEventListener('input', fn); $(id).addEventListener('change', fn); }
+function stepsLabel(){ return (S.steps % 16 === 0) ? (S.steps / 16) + ' BARS' : S.steps + ' STEPS'; }
+function syncStepsUI(){
+  const sel = $('steps'), sl = $('stepsR');
+  if (sl && sl.value !== String(S.steps)) sl.value = S.steps;
+  if (sel){
+    let found = false;
+    for (let i = 0; i < sel.options.length; i++) if (+sel.options[i].value === S.steps){ sel.selectedIndex = i; found = true; break; }
+    if (!found) sel.selectedIndex = -1;
+  }
+  $('stepsOut').textContent = stepsLabel();
+}
+function setSteps(n){
+  S.steps = Math.max(1, Math.min(MAXSTEPS, Math.round(n) || 16));
+  cursorStep = Math.min(cursorStep, S.steps - 1);
+  syncStepsUI(); layout(); refreshAudio();
+}
+bind('bpm', () => { S.bpm = +$('bpm').value; $('bpmOut').textContent = S.bpm + ' BPM'; refreshAudio(); });
+bind('steps', () => { setSteps(+$('steps').value); });
+bind('stepsR', () => { setSteps(+$('stepsR').value); });
+bind('gate', () => { S.gate = (+$('gate').value) / 100; $('gateOut').textContent = $('gate').value + ' %'; refreshAudio(); });
+bind('duty', () => { S.duty = +$('duty').value; refreshAudio(); });
+bind('mode', () => { S.mode = $('mode').value; refreshAudio(); });
+bind('vol', () => {
+  S.vol = (+$('vol').value) / 100; $('volOut').textContent = $('vol').value;
+  if (master && ac){ try{ master.gain.setTargetAtTime(S.vol, ac.currentTime, .02); }catch(e){ master.gain.value = S.vol; } }
+  updateStatus(); drawGrid();   // no restart: volume rides the master gain live
+});
+bind('pin', () => { S.pin = Math.max(1, Math.min(48, +$('pin').value || 4)); buildCode(); });
+$('loopChk').addEventListener('change', () => { S.loop = $('loopChk').checked; reseekRestart(); });
+
+let dirtyT = null;
+/* restart live playback from the current step (keeps playing, no jump to cursor) */
+function reseekRestart(){
+  if (!playing) { updateStatus(); drawGrid(); buildCode(); return; }
+  const s = playStep >= 0 ? playStep : cursorStep;
+  cursorStep = ((s % S.steps) + S.steps) % S.steps;
+  updateStatus(); drawGrid(); buildCode();
+  play();
+}
+function liveRestart(){ clearTimeout(dirtyT); dirtyT = setTimeout(reseekRestart, 180); }
+function refreshAudio(){
+  updateStatus(); drawGrid(); buildCode();
+  if (playing) liveRestart();
+}
+function edit(){ refreshAudio(); }
+
+$('playBtn').onclick = () => { togglePlay(); };
+$('stopBtn').onclick = () => stop();
+$('clearBtn').onclick = () => { for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1; edit(); toast('pattern cleared'); };
+$('rotL').onclick = () => { rotate(1); edit(); };
+$('rotR').onclick = () => { rotate(-1); edit(); };
+$('octD').onclick = () => { transpose(-12); edit(); };
+$('octU').onclick = () => { transpose(12); edit(); };
+$('demoBtn').onclick = () => { loadDemo(); edit(); toast('demo loaded'); };
+$('randBtn').onclick = () => { randomize(); edit(); toast('random riff'); };
+
+function rotate(d){
+  const n = S.steps, cp = pat.slice(0, n);
+  for (let i = 0; i < n; i++) pat[i] = cp[((i + d) % n + n) % n];
+}
+function transpose(d){
+  for (let i = 0; i < MAXSTEPS; i++) if (pat[i] >= 0) pat[i] = clampM(pat[i] + d);
+}
+function loadDemo(){
+  for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
+  S.steps = 32; $('steps').value = '32'; S.bpm = 150; $('bpm').value = 150; $('bpmOut').textContent = '150 BPM';
+  const d = [[0,72],[2,67],[4,75],[6,72],[8,70],[10,67],[12,72],[14,74],
+             [16,75],[18,79],[20,77],[22,75],[24,74],[26,72],[28,67],[30,72]];
+  d.forEach(p => pat[p[0]] = p[1]);
+  cursorStep = 0; syncStepsUI(); layout();
+}
+function randomize(){
+  const sc5 = [0, 3, 5, 7, 10];
+  let deg = 0;
+  for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
+  for (let s = 0; s < S.steps; s++){
+    if (s % 2 === 1 && Math.random() < .72) continue;
+    if (Math.random() < .16) continue;
+    deg += Math.floor(Math.random() * 5) - 2;
+    deg = Math.max(-3, Math.min(sc5.length + 2, deg));
+    const idx = ((deg % sc5.length) + sc5.length) % sc5.length;
+    const oct = Math.floor(deg / sc5.length);
+    pat[s] = clampM(60 + oct * 12 + sc5[idx]);
+  }
+}
+
+/* ============ KEYBOARD ============ */
+window.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT') return;
+  if (e.code === 'Space' && tag === 'BUTTON') return; // let focused button activate natively
+  if (e.code === 'Space'){ e.preventDefault(); togglePlay(); }
+  else if (e.key === 'l' || e.key === 'L'){ const c = $('loopChk'); c.checked = !c.checked; c.dispatchEvent(new Event('change')); }
+  else if (e.key === 'ArrowRight'){ cursorStep = Math.min(S.steps - 1, cursorStep + 1); drawGrid(); }
+  else if (e.key === 'ArrowLeft'){ cursorStep = Math.max(0, cursorStep - 1); drawGrid(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1; edit(); }
+});
+
+/* ============ EXPORT: WAV / MP3 ============ */
+function saveBlob(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+}
+function wavBlob(f32, sr){
+  const n = f32.length, ab = new ArrayBuffer(44 + n * 2), v = new DataView(ab);
+  const put = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  put(0,'RIFF'); v.setUint32(4, 36 + n * 2, true); put(8,'WAVE'); put(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  put(36,'data'); v.setUint32(40, n*2, true);
+  for (let i = 0; i < n; i++){
+    const x = Math.max(-1, Math.min(1, f32[i]));
+    v.setInt16(44 + i * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true);
+  }
+  return new Blob([ab], { type:'audio/wav' });
+}
+function mp3Blob(f32, sr){
+  if (typeof lamejs === 'undefined' || !lamejs.Mp3Encoder) throw new Error('no-mp3');
+  const enc = new lamejs.Mp3Encoder(1, sr, 128);
+  const n = f32.length, left = new Int16Array(n);
+  for (let i = 0; i < n; i++){ const x = Math.max(-1, Math.min(1, f32[i])); left[i] = x < 0 ? x * 0x8000 : x * 0x7fff; }
+  const CH = 1152 * 8, parts = [];
+  for (let i = 0; i < n; i += CH){
+    const b = enc.encodeBuffer(left.subarray(i, Math.min(n, i + CH)));
+    if (b.length > 0) parts.push(new Uint8Array(b));
+  }
+  const end = enc.flush();
+  if (end.length > 0) parts.push(new Uint8Array(end));
+  return new Blob(parts, { type:'audio/mp3' });
+}
+function busy(btn, on, txt){
+  if (on){ btn._old = btn.innerHTML; btn.innerHTML = txt || 'WORKING…'; btn.disabled = true; }
+  else { btn.innerHTML = btn._old || btn.innerHTML; btn.disabled = false; }
+}
+$('dlWav').onclick = function(){
+  busy(this, true);
+  setTimeout(() => {
+    try{
+      const d = renderAudio(SR_EXPORT);
+      saveBlob(wavBlob(d, SR_EXPORT), 'beep1_song.wav');
+      toast('wav downloaded');
+    }catch(e){ toast('wav failed', true); }
+    busy(this, false);
+  }, 30);
+};
+$('dlMp3').onclick = function(){
+  const btn = this; busy(btn, true, 'ENCODING…');
+  setTimeout(() => {
+    try{
+      const d = renderAudio(SR_EXPORT);
+      saveBlob(mp3Blob(d, SR_EXPORT), 'beep1_song.mp3');
+      toast('mp3 downloaded');
+    }catch(e){
+      toast('mp3 encoder offline — saved wav', true);
+      try{ const d2 = renderAudio(SR_EXPORT); saveBlob(wavBlob(d2, SR_EXPORT), 'beep1_song.wav'); }catch(_){}
+    }
+    busy(btn, false);
+  }, 30);
+};
+
+/* ============ CODE GENERATION ============ */
+function makeInoActive(stepMs, gatePct, total, barsTxt){
+  const vals = [];
+  for (let i = 0; i < S.steps; i++) vals.push(pat[i] >= 0 ? 1 : 0);
+  let body = '';
+  for (let i = 0; i < vals.length; i += 16){
+    const chunk = vals.slice(i, i + 16).join(', ');
+    const cm = vals.slice(i, i + 16).map((v, k) => v ? noteName(pat[i + k]) : '--');
+    body += '  ' + chunk + (i + 16 < vals.length ? ',' : ' ') +
+            '   /* ' + pad2(i) + ': ' + cm.join(' ') + ' */\n';
+  }
+  return '/* =====================================================================\n' +
+'   BEEP//1  --  rhythm song for ACTIVE buzzer + ESP32\n' +
+'   generated by BEEP//1 studio (ACTIVE mode)\n\n' +
+'   tempo     : ' + S.bpm + ' BPM (16th steps = ' + stepMs + ' ms)\n' +
+'   steps     : ' + S.steps + '  (' + barsTxt + ')\n' +
+'   note gate : ' + gatePct + ' %\n' +
+'   length    : ' + total + ' s\n' +
+'   sound     : fixed ~' + ACTIVE_FREQ + ' Hz (active buzzer plays one pitch only)\n' +
+'   pitch row : ignored by hardware, kept so you can switch to PASSIVE later\n' +
+'   hardware  : active buzzer  ->  NPN transistor from 5V, GPIO drives base\n' +
+'               (buzzer draws ~20-30 mA: do NOT power it straight from GPIO)\n' +
+'   ===================================================================== */\n\n' +
+'#define BUZZER_PIN   ' + S.pin + '\n' +
+'#define TEMPO_BPM    ' + S.bpm + '\n' +
+'#define SONG_STEPS   ' + S.steps + '\n' +
+'#define GATE_PCT     ' + gatePct + '\n' +
+'#define STEP_MS      (60000UL / (TEMPO_BPM * 4UL))\n' +
+'#define REPEAT_GAP   500\n\n' +
+'/* 1 = beep, 0 = rest (note names in comments are for PASSIVE mode) */\n' +
+'const uint8_t SONG[SONG_STEPS] = {\n' + body + '};\n\n' +
+'void setup() {\n' +
+'  pinMode(BUZZER_PIN, OUTPUT);\n' +
+'  digitalWrite(BUZZER_PIN, LOW);\n' +
+'}\n\n' +
+'void playSong() {\n' +
+'  const uint32_t step = STEP_MS;\n' +
+'  const uint32_t on   = (step * GATE_PCT) / 100UL;\n' +
+'  const uint32_t off  = (step > on) ? step - on : 0;\n' +
+'  for (uint16_t i = 0; i < SONG_STEPS; i++) {\n' +
+'    if (SONG[i]) {\n' +
+'      digitalWrite(BUZZER_PIN, HIGH);\n' +
+'      delay(on);\n' +
+'      digitalWrite(BUZZER_PIN, LOW);\n' +
+'      delay(off);\n' +
+'    } else {\n' +
+'      digitalWrite(BUZZER_PIN, LOW);\n' +
+'      delay(step);\n' +
+'    }\n' +
+'  }\n' +
+'}\n\n' +
+'void loop() {\n' +
+'  playSong();\n' +
+'  delay(REPEAT_GAP);\n' +
+'}\n';
+}
+function makeIno(){
+  const stepMs = Math.round(60000 / (S.bpm * 4));
+  const gatePct = Math.round(S.gate * 100);
+  const dutyPct = Math.round(S.duty * 100);
+  const vals = [];
+  for (let i = 0; i < S.steps; i++) vals.push(pat[i] >= 0 ? Math.round(midiFreq(pat[i])) : 0);
+  let body = '';
+  for (let i = 0; i < vals.length; i += 8){
+    const chunk = vals.slice(i, i + 8).map(v => String(v).padStart(4, ' ')).join(', ');
+    const cm = vals.slice(i, i + 8).map((v, k) => v ? noteName(pat[i + k]) : '--');
+    body += '  ' + chunk + (i + 8 < vals.length ? ',' : ' ') +
+            '   /* ' + pad2(i) + ': ' + cm.join(' ') + ' */\n';
+  }
+  const total = (S.steps * stepSec()).toFixed(2);
+  const barsTxt = (S.steps % 16 === 0) ? (S.steps / 16) + ' bars' : S.steps + ' steps';
+  if (S.mode === 'active') return makeInoActive(stepMs, gatePct, total, barsTxt);
+  return '/* =====================================================================\n' +
+'   BEEP//1  --  1-bit beeper song for ESP32\n' +
+'   generated by BEEP//1 studio (PASSIVE mode)\n\n' +
+'   tempo     : ' + S.bpm + ' BPM (16th steps = ' + stepMs + ' ms)\n' +
+'   steps     : ' + S.steps + '  (' + barsTxt + ')\n' +
+'   note gate : ' + gatePct + ' %\n' +
+'   duty      : ' + dutyPct + ' % (preview only; tone() is fixed 50 %)\n' +
+'   length    : ' + total + ' s\n' +
+'   hardware  : passive buzzer / piezo  ->  BUZZER_PIN  and  GND\n' +
+'   ===================================================================== */\n\n' +
+'#define BUZZER_PIN   ' + S.pin + '\n' +
+'#define TEMPO_BPM    ' + S.bpm + '\n' +
+'#define SONG_STEPS   ' + S.steps + '\n' +
+'#define GATE_PCT     ' + gatePct + '\n' +
+'#define STEP_MS      (60000UL / (TEMPO_BPM * 4UL))\n' +
+'#define REPEAT_GAP   500\n\n' +
+'/* frequency in Hz, 0 = rest */\n' +
+'const uint16_t SONG[SONG_STEPS] PROGMEM = {\n' + body + '};\n\n' +
+'void setup() {\n' +
+'  pinMode(BUZZER_PIN, OUTPUT);\n' +
+'  digitalWrite(BUZZER_PIN, LOW);\n' +
+'}\n\n' +
+'void playSong() {\n' +
+'  const uint32_t step = STEP_MS;\n' +
+'  const uint32_t on   = (step * GATE_PCT) / 100UL;\n' +
+'  for (uint16_t i = 0; i < SONG_STEPS; i++) {\n' +
+'    uint16_t f = pgm_read_word(&SONG[i]);\n' +
+'    if (f > 0) tone(BUZZER_PIN, f, on);\n' +
+'    else       noTone(BUZZER_PIN);\n' +
+'    delay(step);\n' +
+'    noTone(BUZZER_PIN);\n' +
+'  }\n' +
+'}\n\n' +
+'void loop() {\n' +
+'  playSong();\n' +
+'  delay(REPEAT_GAP);\n' +
+'}\n\n' +
+'/* ---- optional: exact duty cycle with LEDC (Arduino-ESP32 core 2.x) ----\n' +
+'   const uint8_t  CH   = 0;\n' +
+'   const uint16_t RES  = 10;                       // 10-bit duty\n' +
+'   const uint16_t DUTY = (uint16_t)(1023 * ' + dutyPct + ' / 100);\n\n' +
+'   void beepDuty(uint16_t f, uint32_t ms) {\n' +
+'     ledcSetup(CH, f, RES);\n' +
+'     ledcAttachPin(BUZZER_PIN, CH);\n' +
+'     ledcWrite(CH, DUTY);\n' +
+'     delay(ms);\n' +
+'     ledcWrite(CH, 0);\n' +
+'     ledcDetachPin(BUZZER_PIN);\n' +
+'   }\n' +
+'   -------------------------------------------------------------------- */\n';
+}
+function makeJson(){
+  const notes = [];
+  for (let i = 0; i < S.steps; i++){
+    if (pat[i] >= 0) notes.push({
+      step: i, midi: pat[i], note: noteName(pat[i]),
+      freq: +midiFreq(pat[i]).toFixed(2),
+      timeMs: Math.round(i * 60000 / (S.bpm * 4)),
+      durMs: Math.round(60000 / (S.bpm * 4) * S.gate)
+    });
+  }
+  return JSON.stringify({
+    format: 'beep1', version: 1,
+    bpm: S.bpm, steps: S.steps, stepMs: Math.round(60000 / (S.bpm * 4)),
+    gate: S.gate, duty: S.duty, pin: S.pin, mode: S.mode,
+    pattern: Array.from(pat.subarray(0, S.steps)),
+    notes: notes
+  }, null, 2);
+}
+function buildCode(){
+  const c = makeIno();
+  $('codeOut').textContent = c;
+  return c;
+}
+$('dlIno').onclick = () => { saveBlob(new Blob([buildCode()], { type:'text/plain' }), 'beep1_song.ino'); toast('beep1_song.ino downloaded'); };
+$('dlJson').onclick = () => { saveBlob(new Blob([makeJson()], { type:'application/json' }), 'beep1_song.json'); toast('pattern json downloaded'); };
+$('impBtn').onclick = () => $('impFile').click();
+$('impFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { importText(String(r.result || ''), f.name); toast('loaded ' + f.name); }
+    catch(err){ toast('import failed — ' + (err && err.message ? err.message : 'bad file'), true); }
+  };
+  r.onerror = () => toast('import failed', true);
+  r.readAsText(f);
+});
+function importText(txt, name){
+  const t = (txt || '').trim();
+  if (!t) throw new Error('empty file');
+  if (t[0] === '{' || /\.json$/i.test(name || '')) return importJson(t);
+  return importIno(t);
+}
+function importJson(t){
+  const o = JSON.parse(t);
+  if (!o || typeof o !== 'object' || (!Array.isArray(o.pattern) && o.format !== 'beep1')) throw new Error('not a beep1 file');
+  applyState({
+    bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, pin: +o.pin, mode: o.mode,
+    pattern: Array.isArray(o.pattern) ? o.pattern : null
+  });
+  return true;
+}
+function midiFromFreq(f){
+  if (!(f > 0)) return -1;
+  return clampM(Math.round(69 + 12 * Math.log(f / 440) / Math.LN2));
+}
+function importIno(t){
+  const grabNum = re => { const m = t.match(re); return m ? +m[1] : NaN; };
+  let steps = grabNum(/#define\s+SONG_STEPS\s+(\d+)/);
+  const bpm = grabNum(/#define\s+TEMPO_BPM\s+(\d+)/);
+  const gate = grabNum(/#define\s+GATE_PCT\s+(\d+)/);
+  const pin = grabNum(/#define\s+BUZZER_PIN\s+(\d+)/);
+  const bodyM = t.match(/SONG\s*\[[^\]]*\]\s*(?:PROGMEM\s*)?=\s*\{([\s\S]*?)\};/);
+  if (!bodyM) throw new Error('no SONG found');
+  const nums = bodyM[1].replace(/\/\*[\s\S]*?\*\//g, ' ').split(/[^0-9]+/).filter(x => x !== '').map(Number);
+  if (!nums.length) throw new Error('empty SONG');
+  if (!isFinite(steps) || steps <= 0) steps = nums.length;
+  steps = Math.max(1, Math.min(MAXSTEPS, Math.min(steps, nums.length)));
+  const isActive = /ACTIVE mode/.test(t) || nums.every(v => v <= 1);
+  const pattern = nums.slice(0, steps).map(v => isActive ? (v > 0 ? 72 : -1) : midiFromFreq(v));
+  applyState({
+    bpm: bpm, steps: steps,
+    gate: isFinite(gate) ? gate / 100 : NaN, duty: NaN, pin: pin,
+    mode: isActive ? 'active' : 'passive', pattern: pattern
+  });
+  return true;
+}
+function applyState(o){
+  if (isFinite(o.bpm)) S.bpm = Math.max(40, Math.min(320, Math.round(o.bpm)));
+  if (isFinite(o.steps)) S.steps = Math.max(1, Math.min(MAXSTEPS, Math.round(o.steps)));
+  if (isFinite(o.gate)) S.gate = Math.max(.05, Math.min(1, o.gate));
+  if (isFinite(o.duty)){
+    const presets = [.125, .25, .5, .75];
+    S.duty = presets.reduce((a, b) => Math.abs(b - o.duty) < Math.abs(a - o.duty) ? b : a);
+  }
+  if (isFinite(o.pin)) S.pin = Math.max(1, Math.min(48, Math.round(o.pin)));
+  if (o.mode === 'active' || o.mode === 'passive') S.mode = o.mode;
+  if (Array.isArray(o.pattern)){
+    for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
+    const n = Math.min(o.pattern.length, S.steps, MAXSTEPS);
+    for (let i = 0; i < n; i++){
+      const v = Math.round(+o.pattern[i]);
+      pat[i] = (isFinite(v) && v >= 0) ? clampM(v) : -1;
+    }
+  }
+  $('bpm').value = S.bpm; $('bpmOut').textContent = S.bpm + ' BPM';
+  $('gate').value = Math.round(S.gate * 100); $('gateOut').textContent = Math.round(S.gate * 100) + ' %';
+  $('duty').value = String(S.duty);
+  $('pin').value = S.pin;
+  $('mode').value = S.mode;
+  cursorStep = Math.min(cursorStep, S.steps - 1);
+  syncStepsUI(); layout(); refreshAudio();
+}
+$('codeBtn').onclick = () => {
+  const b = $('codeBox');
+  b.classList.toggle('open');
+  $('codeBtn').classList.toggle('on', b.classList.contains('open'));
+  if (b.classList.contains('open')) b.scrollIntoView({ behavior:'smooth', block:'nearest' });
+};
+$('copyBtn').onclick = () => {
+  const txt = buildCode();
+  const done = () => toast('code copied');
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => fallbackCopy(txt, done));
+  else fallbackCopy(txt, done);
+};
+function fallbackCopy(txt, cb){
+  const ta = document.createElement('textarea');
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); cb(); } catch(e){ toast('copy failed', true); }
+  ta.remove();
+}
+
+/* ============ RESIZE + BOOT ============ */
+let rz = null;
+window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { layout(); drawGrid(); }, 80); });
+
+$('bpmOut').textContent = S.bpm + ' BPM';
+$('gateOut').textContent = Math.round(S.gate * 100) + ' %';
+$('volOut').textContent = Math.round(S.vol * 100);
+loadDemo();
+layout();
+updateStatus();
+buildCode();
+syncTransport();
+requestAnimationFrame(tick);
+setTimeout(() => { layout(); drawGrid(); }, 250);
+})();
+</script>
+</body>
+</html>
