@@ -204,7 +204,7 @@ const TEST = `
     ok('device protocol volume', dl[5] === 'VOL 75', dl[5]);
     ok('device protocol loop', dl[6] === 'LOOP 1', dl[6]);
     ok('device protocol skips silent notes', dl.filter(l => /^N /.test(l)).length === 2, dl.filter(l => /^N /.test(l)).length);
-    ok('device protocol keeps custom freq', dl.indexOf('N 4 2 440 60') > -1, dl.join('|'));
+    ok('device protocol keeps custom freq', dl.indexOf('N 4 2 440 60 0') > -1, dl.join('|'));
     ok('device protocol enables local button', dl[dl.length - 1] === 'BUTTON 1', dl[dl.length - 1]);
     ok('device play line starts at 0', devicePlayLine(0) === 'PLAY 1', devicePlayLine(0));
     ok('device play line seeks', devicePlayLine(8) === 'PLAY 1 8', devicePlayLine(8));
@@ -215,6 +215,38 @@ const TEST = `
     ok('device master volume -> VOL', dl2.indexOf('VOL 40') > -1, dl2.join('|'));
     ok('device duty -> DUTY', dl2.indexOf('DUTY 25') > -1, dl2.join('|'));
     S.vol = .75; S.duty = .5;
+
+    // per-note timbre: 0 = follow the whole-song duty, 1..100 = override
+    activeNotes[0].duty = .2;
+    const dlDuty = deviceSongLines();
+    ok('device per-note duty rides on N', dlDuty.indexOf('N 2 1 262 100 20') > -1, dlDuty.join('|'));
+    activeNotes[0].duty = null;
+    const dlInherit = deviceSongLines();
+    ok('device note without duty inherits song', dlInherit.indexOf('N 2 1 262 100 0') > -1, dlInherit.join('|'));
+
+    // note panel + audio honour per-note duty
+    activeNotes = [{ id: nextNoteId++, step: 0, len: 4, midi: 60, vol: 1, freq: 440, color: 0, duty: .25 }];
+    selectedNote = activeNotes[0].id; updateNotePanel();
+    ok('note panel shows per-note duty', +$('nDuty').value === 25 && $('nDutyOut').textContent === '25 %', $('nDuty').value + '/' + $('nDutyOut').textContent);
+    const dutyBuf = renderAudio(8000, 1);
+    let pos = 0, tot = 0;
+    for (let i = 200; i < 900; i++){ tot++; if (dutyBuf[i] > 0) pos++; }
+    const ratio = pos / tot;
+    ok('per-note duty changes pulse width', ratio > .15 && ratio < .35, ratio.toFixed(2));
+    activeNotes[0].duty = null; updateNotePanel();
+    ok('note panel shows SONG when inheriting', +$('nDuty').value === 0 && $('nDutyOut').textContent === 'SONG', $('nDuty').value + '/' + $('nDutyOut').textContent);
+
+    // persistence keeps per-note duty
+    activeNotes[0].duty = .4;
+    const jd = JSON.parse(makeJson());
+    ok('json keeps per-note duty', Math.abs(jd.activeNotes[0].duty - .4) < 1e-9, jd.activeNotes[0].duty);
+    applyState({ bpm:jd.bpm, steps:jd.steps, gate:jd.gate, duty:jd.duty, pin:jd.pin, activeNotes:jd.activeNotes });
+    ok('applyState restores per-note duty', Math.abs(activeNotes[0].duty - .4) < 1e-9, activeNotes[0].duty);
+    activeNotes[0].duty = null;
+
+    // whole-song duty slider
+    applyState({ duty: .35 });
+    ok('global duty slider synced', +$('duty').value === 35 && $('dutyOut').textContent === '35 %', $('duty').value + '/' + $('dutyOut').textContent);
 
     output = 'esp'; syncOutSwitch();
     ok('output switch ESP on', $('outEsp').classList.contains('on') && !$('outPc').classList.contains('on'));

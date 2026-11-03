@@ -9,7 +9,8 @@ Needs pyserial (PlatformIO's Python already has it:
 
 It resets the ESP32, checks PING/PONG, loads a short C-major scale plus a
 chord, plays it once, then starts/stops a loop.  Finally it beeps the same
-tone at full and at 20 % volume so you can hear that VOL works.
+tone at full and at 20 % volume so you can hear that VOL works, and at two
+different per-note duties so you can hear the timbre override.
 You should hear:
     boot chirp -> scale -> chord -> (loop starts) -> silence -> loud beep -> quiet beep
 
@@ -94,12 +95,13 @@ print('LOOP  ->', repr(cmd('LOOP 1')))
 print('BTN   ->', repr(cmd('BUTTON 0')), 'then', repr(cmd('BUTTON 1')))
 
 # C major scale + C major chord on step 8 (chord is arpeggiated)
-# The two E notes carry a lower per-note volume so it can be heard.
-song = [(0, 523, 100), (1, 587, 100), (2, 659, 100), (3, 698, 100),
-        (4, 784, 100), (5, 880, 100), (6, 988, 100), (7, 1047, 100),
-        (8, 523, 100), (8, 659, 45), (8, 784, 100)]
-for step, freq, vol in song:
-    cmd('N %d 1 %d %d' % (step, freq, vol), 0.03)
+# The two E notes carry a lower per-note volume so it can be heard, and one
+# note uses a 20 % per-note duty so you can hear the timbre override.
+song = [(0, 523, 100, 0), (1, 587, 100, 0), (2, 659, 100, 20), (3, 698, 100, 0),
+        (4, 784, 100, 0), (5, 880, 100, 0), (6, 988, 100, 0), (7, 1047, 100, 0),
+        (8, 523, 100, 0), (8, 659, 45, 0), (8, 784, 100, 0)]
+for step, freq, vol, duty in song:
+    cmd('N %d 1 %d %d %d' % (step, freq, vol, duty), 0.03)
 print('notes queued:', len(song))
 
 play_reply = cmd('PLAY 0', 0.2)          # STATE 1 + OK PLAY + first P lines
@@ -124,6 +126,10 @@ print('BEEP  ->', repr(cmd('BEEP 1000 120', 0.3)))
 print('VOL 100 BEEP ->', repr(cmd('VOL 100', 0.05)), repr(cmd('BEEP 880 260', 0.4)))
 print('VOL 20  BEEP ->', repr(cmd('VOL 20', 0.05)), repr(cmd('BEEP 880 260', 0.4)))
 print('VOL 75  ->', repr(cmd('VOL 75', 0.1)))
+
+# Per-note timbre: same tone, thin vs fat duty.
+print('DUTY 20 BEEP ->', repr(cmd('BEEP 1000 220 20', 0.35)))
+print('DUTY 80 BEEP ->', repr(cmd('BEEP 1000 220 80', 0.35)))
 
 # Start in the middle of the song and confirm SEEK + P reports.
 seek_reply = cmd('PLAY 1 8', 0.2)

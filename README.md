@@ -63,15 +63,17 @@ RESET                    -> clear song
 BPM <20..400>
 STEPS <1..512>
 GATE <5..100>
-DUTY <1..100>
+DUTY <1..100>            -> whole-song timbre (50 = square)
 VOL <0..100>
 LOOP <0|1>
 BUTTON <0|1>             -> enable/disable the local D14 button
 SEEK <step>              -> jump without restarting
-N <step> <len> <freqHz> [vol]
+N <step> <len> <freqHz> [vol] [duty]
+                         -> per-note volume 0..100 and timbre 1..100
+                            (duty 0 = follow the whole-song DUTY)
 PLAY [0|1] [step]        -> start (1 = loop), optionally at a step
 STOP
-BEEP <freqHz> <ms>
+BEEP <freqHz> <ms> [duty]
 DEVICE -> STATE 1 <loop> / STATE 0 / P <step>
 ```
 
@@ -80,7 +82,8 @@ DEVICE -> STATE 1 <loop> / STATE 0 / P <step>
 - Piano-roll step editor for a **passive piezo / passive buzzer** (a real speaker tone, not a fixed-pitch active beeper).
 - Paint notes by clicking / dragging; move notes by dragging the body; resize length by dragging either end; **shift+drag** sets per-note volume; right-click erases.
 - Stack several pitches on the same step to build chords. Because one pin can only sound one tone at a time, chords are played back as a fast **arpeggio** (both in the browser preview and in the exported firmware).
-- **NOTE** side panel: select a note on the grid and edit its sound (frequency in Hz), start step, length, volume and colour. Every note keeps its own colour and frequency; colours are stored with the project and drawn on the grid.
+- **NOTE** side panel: select a note on the grid and edit its sound (frequency in Hz), start step, length, volume, timbre (duty) and colour. Every note keeps its own colour, frequency, volume and timbre; set timbre to **SONG** to follow the whole-song duty, or move the slider to override it just for that note. All of it is stored with the project and sent to the ESP32.
+- **Duty / timbre** in the toolbar sets the whole song's pulse width (50 % is the bright square wave); per-note timbre overrides it.
 - Project library (save / duplicate / rename / delete, export / import `.json`), plus WAV / MP3 / Arduino `.ino` / `.json` export.
 
 ## Buzzer type
