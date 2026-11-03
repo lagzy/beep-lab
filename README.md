@@ -41,11 +41,19 @@ You should hear a boot chirp, a C-major scale, a chord, then the loop start/stop
 **Use it**
 
 1. Open `index.html` in **Chrome or Edge** (Web Serial is not available in Firefox/Safari).
-2. Press **▶ PLAY ON DEVICE** in the header and pick the ESP32's COM port.
+2. In the header pick the **PC / ESP32** output switch and choose **ESP32**; pick the ESP32's COM port when Chrome asks.
 3. The studio sends the current song and the ESP32 plays it on D4, looping if **LOOP** is on.
-4. The button turns into **■ STOP DEVICE**; press it again to stop.
+4. Every control (play, stop, volume, BPM, gate, duty, loop, note previews) now goes to the selected output. Switch back to **PC** to use the browser's own audio; the device is stopped and its port closed.
+5. Pressing the physical **D14** button starts/stops playback on the ESP32 and the app's playhead follows it.
 
 If you serve the page from GitHub Pages (HTTPS) Web Serial still works. If you use `file://` and your browser hides Web Serial, run a tiny local server (`python -m http.server`) and open `http://localhost:8000`.
+
+**Troubleshooting: no COM port**
+
+- Only **Chrome or Edge** support Web Serial.
+- The board uses a **CH340** USB-serial chip. On a fresh Windows PC, open **Device Manager → Ports (COM & LPT)**. If you see `USB-SERIAL CH340 (COMx)`, the OS sees the board. If `USB2.0-Serial` shows under **Other devices** with a warning, install the WCH CH340 driver, reboot and replug.
+- If nothing appears, try a different **data** USB cable and a different USB port.
+- Close the app/port on any other PC first — only one machine can hold the COM port at a time.
 
 **Serial protocol (115200 baud, one command per line)**
 
@@ -55,10 +63,16 @@ RESET                    -> clear song
 BPM <20..400>
 STEPS <1..512>
 GATE <5..100>
-N <step> <len> <freqHz>  -> add note
-PLAY <0|1>               -> start (1 = loop)
+DUTY <1..100>
+VOL <0..100>
+LOOP <0|1>
+BUTTON <0|1>             -> enable/disable the local D14 button
+SEEK <step>              -> jump without restarting
+N <step> <len> <freqHz> [vol]
+PLAY [0|1] [step]        -> start (1 = loop), optionally at a step
 STOP
 BEEP <freqHz> <ms>
+DEVICE -> STATE 1 <loop> / STATE 0 / P <step>
 ```
 
 ## What it does
