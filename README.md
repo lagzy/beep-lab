@@ -30,6 +30,14 @@ pio run -d firmware -t upload --upload-port COM4 # flash (use your port)
 
 If upload fails, hold the **BOOT** button on the board while it connects. A 1200 Hz boot chirp confirms the buzzer wiring.
 
+**Test over serial**
+
+```bash
+"%USERPROFILE%\.platformio\penv\Scripts\python.exe" firmware/test_serial.py COM5
+```
+
+You should hear a boot chirp, a C-major scale, a chord, then the loop start/stop. The script also checks `PING → PONG` and every protocol command.
+
 **Use it**
 
 1. Open `index.html` in **Chrome or Edge** (Web Serial is not available in Firefox/Safari).

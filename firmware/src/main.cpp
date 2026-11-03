@@ -108,6 +108,15 @@ static void startPlayback(bool loop)
   lastFreq    = 0;
   manualFreq  = 0;
   playing     = true;
+
+  Serial.print("OK PLAY notes=");
+  Serial.print(noteCount);
+  Serial.print(" steps=");
+  Serial.print(songSteps);
+  Serial.print(" bpm=");
+  Serial.print(tempoBpm);
+  Serial.print(" loop=");
+  Serial.println(loop ? 1 : 0);
 }
 
 static void handleLine(char *s)
@@ -297,15 +306,16 @@ void setup()
   digitalWrite(BUZZER_PIN, LOW);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
+  /* tone() uses LEDC channel 0; set it up first so the attach is clean */
+  ledcSetup(0, 1000, 10);
+
   Serial.begin(115200);
   delay(80);
   Serial.println("READY BEEP1");
   Serial.flush();
 
-  /* audible boot confirmation */
-  tone(BUZZER_PIN, 1200);
-  delay(120);
-  noTone(BUZZER_PIN);
+  /* audible boot confirmation (the tone task stops it automatically) */
+  tone(BUZZER_PIN, 1200, 120);
 
   btnRaw    = digitalRead(BUTTON_PIN);
   btnStable = btnRaw;
