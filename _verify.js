@@ -177,18 +177,40 @@ const TEST = `
     simpleMode = true; applyUiMode();
     ok('simple mode adds simple class', document.body.classList.contains('simple') === true);
 
-    // device serial protocol (Play on device)
-    S.steps = 32; S.bpm = 150; S.gate = .85; S.loop = true;
+    // device serial protocol (output switch / ESP32)
+    S.steps = 32; S.bpm = 150; S.gate = .85; S.duty = .5; S.vol = .75; S.loop = true;
     activeNotes = [
       { id: nextNoteId++, step: 2, len: 1, midi: 60, vol: 1, freq: 0, color: 0 },
-      { id: nextNoteId++, step: 4, len: 2, midi: 64, vol: 1, freq: 440, color: 1 },
+      { id: nextNoteId++, step: 4, len: 2, midi: 64, vol: .6, freq: 440, color: 1 },
       { id: nextNoteId++, step: 6, len: 1, midi: 67, vol: 0, freq: 0, color: 2 }
     ];
     const dl = deviceSongLines();
     ok('device protocol header', dl[0] === 'RESET' && dl[1] === 'BPM 150' && dl[2] === 'STEPS 32' && dl[3] === 'GATE 85', dl.slice(0, 4).join('|'));
+    ok('device protocol timbre', dl[4] === 'DUTY 50', dl[4]);
+    ok('device protocol volume', dl[5] === 'VOL 75', dl[5]);
+    ok('device protocol loop', dl[6] === 'LOOP 1', dl[6]);
     ok('device protocol skips silent notes', dl.filter(l => /^N /.test(l)).length === 2, dl.filter(l => /^N /.test(l)).length);
-    ok('device protocol keeps custom freq', dl.indexOf('N 4 2 440') > -1, dl.join('|'));
-    ok('device protocol play line', dl[dl.length - 1] === 'PLAY 1', dl[dl.length - 1]);
+    ok('device protocol keeps custom freq', dl.indexOf('N 4 2 440 60') > -1, dl.join('|'));
+    ok('device protocol enables local button', dl[dl.length - 1] === 'BUTTON 1', dl[dl.length - 1]);
+    ok('device play line starts at 0', devicePlayLine(0) === 'PLAY 1', devicePlayLine(0));
+    ok('device play line seeks', devicePlayLine(8) === 'PLAY 1 8', devicePlayLine(8));
+    ok('device notes detected', deviceHasNotes(dl) === true);
+
+    S.vol = .4; S.duty = .25;
+    const dl2 = deviceSongLines();
+    ok('device master volume -> VOL', dl2.indexOf('VOL 40') > -1, dl2.join('|'));
+    ok('device duty -> DUTY', dl2.indexOf('DUTY 25') > -1, dl2.join('|'));
+    S.vol = .75; S.duty = .5;
+
+    output = 'esp'; syncOutSwitch();
+    ok('output switch ESP on', $('outEsp').classList.contains('on') && !$('outPc').classList.contains('on'));
+    output = 'pc'; syncOutSwitch();
+    ok('output switch PC on', $('outPc').classList.contains('on') && !$('outEsp').classList.contains('on'));
+
+    const oldVol = S.vol;
+    applyState({ vol: .3 });
+    ok('master volume in project state', Math.abs(S.vol - .3) < 1e-9 && +$('vol').value === 30, S.vol + '/' + $('vol').value);
+    S.vol = oldVol;
 
     // rotate never overflows
     S.steps = 4;

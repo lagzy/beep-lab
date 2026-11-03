@@ -19,9 +19,22 @@
      STEPS <1..512>           -> song length in 16th steps
      GATE <5..100>            -> note gate / length in %
      N <step> <len> <freqHz>  -> add one note (up to MAX_NOTES)
-     PLAY [0|1]               -> start playback, 1 = loop (default 1)
+     PLAY [0|1] [step]        -> start playback, 1 = loop (default 1), optional start step
      STOP                     -> stop playback
+     SEEK <step>              -> jump while playing
+     LOOP <0|1>               -> update loop while playing
+     VOL <0..100>             -> master volume (PWM drive)
+     DUTY <1..100>            -> pulse width / timbre
+     BUTTON <0|1>             -> enable/disable the local D14 button
      BEEP <freqHz> <ms>       -> one-off test tone
+
+   Note volumes ride along on each note:
+     N <step> <len> <freqHz> [vol 0..100]
+
+   Unsolicited reports sent back to the browser:
+     STATE 1 <loop>           -> playback started
+     STATE 0                  -> playback stopped (STOP, button, or end)
+     P <step>                 -> current step, once per step (drives playhead)
 
    This file is intentionally dependency-free (Arduino core only).
    ========================================================================== */
@@ -43,6 +56,7 @@ struct Note {
   uint16_t step;
   uint16_t len;
   uint16_t freq;
+  uint8_t  vol;          /* per-note volume 0..100 */
 };
 
 static Note     notes[MAX_NOTES];
@@ -50,6 +64,9 @@ static uint16_t noteCount  = 0;
 static uint16_t songSteps  = 32;
 static uint16_t tempoBpm   = 150;
 static uint8_t  gatePct    = 85;
+static uint8_t  volumePct  = 75;    /* master volume 0..100 */
+static uint8_t  dutyPct    = 50;    /* pulse width / timbre 1..100 */
+static bool     buttonOn   = true;  /* D14 local button enabled */
 
 /* ---- playback state (non-blocking) ---- */
 static bool     playing      = false;
@@ -60,6 +77,8 @@ static uint32_t totalUs      = 0;
 static uint32_t lastArpUs    = 0;
 static uint16_t arpIndex     = 0;
 static uint16_t lastFreq     = 0;
+static uint8_t  lastVol      = 0;
+static uint16_t lastSentStep = 0xFFFF;  /* last step reported to the browser */
 
 /* ---- one-off BEEP state ---- */
 static uint16_t manualFreq   = 0;
@@ -83,13 +102,63 @@ static uint32_t computeStepUs()
   return 60000000UL / (bpm * 4UL);              /* 16th note in microseconds */
 }
 
+/* --------------------------------------------------------------------------
+   Passive buzzer drive.  The ESP32's tone() is always a 50 % square and has
+   no volume control, so we drive LEDC channel 0 directly: frequency sets the
+   pitch, duty sets loudness/timbre.  Effective duty is the product of the
+   master volume, the DUTY/timbre setting, and the note's own volume.
+   -------------------------------------------------------------------------- */
+static uint16_t dutyFor(uint8_t noteVol)
+{
+  if (!volumePct || !noteVol) return 0;
+  /* A passive piezo gets much louder near 50 % duty, so a straight linear
+     volume would feel dead near the top.  Squaring the master volume spreads
+     the change evenly across the slider (0 -> silence, 100 -> 50 % drive). */
+  uint32_t d = (uint32_t)511 * volumePct * volumePct * noteVol / 1000000UL;
+  d = d * dutyPct / 50UL;                       /* timbre: 50 % is unchanged */
+  if (d == 0) d = 1;                            /* keep tiny volumes audible */
+  return (uint16_t)(d > 1023 ? 1023 : d);
+}
+
+static void buzOff()
+{
+  ledcWrite(0, 0);
+  lastFreq = 0;
+  lastVol  = 0;
+}
+
+static void buzTone(uint16_t freq, uint8_t noteVol)
+{
+  if (!freq || !noteVol) {
+    if (lastFreq || lastVol) buzOff();
+    return;
+  }
+  if (freq != lastFreq) {
+    ledcWriteTone(0, freq);                     /* sets frequency + 50 % duty */
+    lastFreq = freq;
+    ledcWrite(0, dutyFor(noteVol));
+    lastVol = noteVol;
+  } else if (noteVol != lastVol) {
+    ledcWrite(0, dutyFor(noteVol));
+    lastVol = noteVol;
+  }
+}
+
+/* re-apply duty after the master volume or timbre changes */
+static void refreshDuty()
+{
+  if (lastFreq) ledcWrite(0, dutyFor(lastVol));
+}
+
 static void stopPlayback(bool quiet)
 {
+  bool wasPlaying = playing;
   playing    = false;
   manualFreq = 0;
-  if (quiet) {
-    noTone(BUZZER_PIN);
-    lastFreq = 0;
+  if (quiet) buzOff();
+  if (wasPlaying) {
+    lastSentStep = 0xFFFF;
+    Serial.println("STATE 0");
   }
 }
 
@@ -105,9 +174,13 @@ static void startPlayback(bool loop)
   playStartUs = micros();
   lastArpUs   = micros();
   arpIndex    = 0;
-  lastFreq    = 0;
   manualFreq  = 0;
+  buzOff();
   playing     = true;
+  lastSentStep = 0xFFFF;
+
+  Serial.print("STATE 1 ");
+  Serial.println(loop ? 1 : 0);
 
   Serial.print("OK PLAY notes=");
   Serial.print(noteCount);
@@ -117,6 +190,40 @@ static void startPlayback(bool loop)
   Serial.print(tempoBpm);
   Serial.print(" loop=");
   Serial.println(loop ? 1 : 0);
+}
+
+/* change tempo without stopping; keep the current musical position */
+static void setTempo(uint16_t bpm)
+{
+  bpm = (uint16_t)constrain(bpm, 20, 400);
+  uint32_t now = micros();
+  if (playing && stepUs) {
+    uint32_t pos = (now - playStartUs) / stepUs;
+    if (pos >= songSteps) pos = (uint32_t)(songSteps - 1);
+    tempoBpm = bpm;
+    stepUs   = computeStepUs();
+    totalUs  = stepUs * (uint32_t)songSteps;
+    playStartUs = now - pos * stepUs;
+    lastArpUs   = now;
+    lastSentStep = 0xFFFF;
+  } else {
+    tempoBpm = bpm;
+    stepUs   = computeStepUs();
+    totalUs  = stepUs * (uint32_t)songSteps;
+  }
+}
+
+/* jump to a step while playing (used for live edits / ruler clicks) */
+static void seekPlayback(uint16_t step)
+{
+  if (!playing) return;
+  if (step >= songSteps) step = (uint16_t)(songSteps - 1);
+  playStartUs  = micros() - (uint32_t)step * stepUs;
+  lastArpUs    = micros();
+  arpIndex     = 0;
+  lastSentStep = 0xFFFF;
+  Serial.print("OK SEEK ");
+  Serial.println(step);
 }
 
 static void handleLine(char *s)
@@ -144,14 +251,15 @@ static void handleLine(char *s)
     return;
   }
 
-  unsigned int a, b, c;
+  unsigned int a, b, c, d;
   if (sscanf(s, "BPM %u", &a) == 1) {
-    tempoBpm = (uint16_t)constrain(a, 20, 400);
+    setTempo((uint16_t)constrain(a, 20, 400));
     Serial.print("OK BPM "); Serial.println(tempoBpm);
     return;
   }
   if (sscanf(s, "STEPS %u", &a) == 1) {
     songSteps = (uint16_t)constrain(a, 1, 512);
+    totalUs   = stepUs * (uint32_t)songSteps;
     Serial.print("OK STEPS "); Serial.println(songSteps);
     return;
   }
@@ -160,29 +268,70 @@ static void handleLine(char *s)
     Serial.print("OK GATE "); Serial.println(gatePct);
     return;
   }
-  if (sscanf(s, "N %u %u %u", &a, &b, &c) == 3) {
-    if (noteCount < MAX_NOTES) {
-      Note &nt = notes[noteCount++];
-      nt.step = (uint16_t)constrain(a, 0, 511);
-      nt.len  = (uint16_t)constrain(b, 1, 512);
-      nt.freq = (uint16_t)constrain(c, 0, 20000);
-    }
+  if (sscanf(s, "VOL %u", &a) == 1) {
+    volumePct = (uint8_t)constrain(a, 0, 100);
+    refreshDuty();
+    Serial.print("OK VOL "); Serial.println(volumePct);
     return;
+  }
+  if (sscanf(s, "DUTY %u", &a) == 1) {
+    dutyPct = (uint8_t)constrain(a, 1, 100);
+    refreshDuty();
+    Serial.print("OK DUTY "); Serial.println(dutyPct);
+    return;
+  }
+  if (sscanf(s, "LOOP %u", &a) == 1) {
+    loopPlay = (a != 0);
+    Serial.print("OK LOOP "); Serial.println(loopPlay ? 1 : 0);
+    return;
+  }
+  if (sscanf(s, "BUTTON %u", &a) == 1) {
+    bool on = (a != 0);
+    if (!on) stopPlayback(true);
+    buttonOn = on;
+    btnRaw = digitalRead(BUTTON_PIN);
+    btnStable = btnRaw;
+    btnChangeMs = millis();
+    Serial.print("OK BUTTON "); Serial.println(buttonOn ? 1 : 0);
+    return;
+  }
+  if (sscanf(s, "SEEK %u", &a) == 1) {
+    if (!playing) { Serial.println("ERR NOT_PLAYING"); return; }
+    seekPlayback((uint16_t)a);
+    return;
+  }
+  {
+    int got = sscanf(s, "N %u %u %u %u", &a, &b, &c, &d);
+    if (got >= 3) {
+      if (noteCount < MAX_NOTES) {
+        Note &nt = notes[noteCount++];
+        nt.step = (uint16_t)constrain(a, 0, 511);
+        nt.len  = (uint16_t)constrain(b, 1, 512);
+        nt.freq = (uint16_t)constrain(c, 0, 20000);
+        nt.vol  = (got >= 4) ? (uint8_t)constrain(d, 0, 100) : 100;
+      }
+      return;
+    }
   }
 
   if (!strcmp(s, "PLAY")) {
     startPlayback(true);
     return;
   }
-  if (sscanf(s, "PLAY %u", &a) == 1) {
-    startPlayback(a != 0);
-    return;
+  {
+    unsigned int st = 0;
+    int got = sscanf(s, "PLAY %u %u", &a, &st);
+    if (got >= 1) {
+      startPlayback(a != 0);
+      if (got >= 2 && playing) seekPlayback((uint16_t)st);
+      return;
+    }
   }
   if (sscanf(s, "BEEP %u %u", &a, &b) == 2) {
     stopPlayback(true);
     uint16_t f = (uint16_t)constrain(a, 20, 20000);
     if (f) {
-      tone(BUZZER_PIN, f);
+      buzTone(f, 100);
       manualFreq  = f;
       manualOffMs = millis() + constrain(b, 10, 5000);
     }
@@ -216,9 +365,8 @@ static void playerTick()
 
   if (!playing) {
     if (manualFreq && (int32_t)(millis() - manualOffMs) >= 0) {
-      noTone(BUZZER_PIN);
+      buzOff();
       manualFreq = 0;
-      lastFreq   = 0;
     }
     return;
   }
@@ -234,26 +382,35 @@ static void playerTick()
     }
   }
 
+  /* report the current step so the browser can move its playhead */
+  uint16_t stepNow = (uint16_t)(t / stepUs);
+  if (stepNow >= songSteps) stepNow = (uint16_t)(songSteps - 1);
+  if (stepNow != lastSentStep) {
+    lastSentStep = stepNow;
+    Serial.print("P ");
+    Serial.println(stepNow);
+  }
+
   /* collect every voice sounding at logical time t */
-  uint16_t voices[MAX_VOICES];
+  struct Voice { uint16_t freq; uint8_t vol; };
+  Voice    voices[MAX_VOICES];
   uint8_t  nf = 0;
   for (uint16_t i = 0; i < noteCount && nf < MAX_VOICES; i++) {
     uint32_t on  = (uint32_t)notes[i].step * stepUs;
     uint32_t off = on + ((uint32_t)notes[i].len * stepUs * gatePct) / 100UL;
-    if (t >= on && t < off && notes[i].freq > 0) {
-      voices[nf++] = notes[i].freq;
+    if (t >= on && t < off && notes[i].freq > 0 && notes[i].vol > 0) {
+      voices[nf].freq = notes[i].freq;
+      voices[nf].vol  = notes[i].vol;
+      nf++;
     }
   }
 
   if (nf == 0) {
-    if (lastFreq) { noTone(BUZZER_PIN); lastFreq = 0; }
+    if (lastFreq) buzOff();
     return;
   }
   if (nf == 1) {
-    if (voices[0] != lastFreq) {
-      tone(BUZZER_PIN, voices[0]);
-      lastFreq = voices[0];
-    }
+    buzTone(voices[0].freq, voices[0].vol);
     return;
   }
 
@@ -261,16 +418,14 @@ static void playerTick()
   if ((uint32_t)(now - lastArpUs) >= ARP_US) {
     lastArpUs = now;
     arpIndex  = (uint16_t)((arpIndex + 1) % nf);
-    uint16_t f = voices[arpIndex];
-    if (f != lastFreq) {
-      tone(BUZZER_PIN, f);
-      lastFreq = f;
-    }
+    buzTone(voices[arpIndex].freq, voices[arpIndex].vol);
   }
 }
 
 static void buttonTick()
 {
+  if (!buttonOn) return;
+
   bool raw = digitalRead(BUTTON_PIN);
   uint32_t now = millis();
 
@@ -291,7 +446,7 @@ static void buttonTick()
     Serial.println("BTN PLAY");
   } else {
     /* nothing loaded yet: short test beep so the wiring can be checked */
-    tone(BUZZER_PIN, 1000);
+    buzTone(1000, 100);
     manualFreq  = 1000;
     manualOffMs = millis() + 180;
     Serial.println("BTN BEEP");
@@ -306,16 +461,20 @@ void setup()
   digitalWrite(BUZZER_PIN, LOW);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  /* tone() uses LEDC channel 0; set it up first so the attach is clean */
-  ledcSetup(0, 1000, 10);
+  /* direct LEDC drive so we can control volume as PWM duty */
+  ledcSetup(0, 2000, 10);
+  ledcAttachPin(BUZZER_PIN, 0);
+  ledcWrite(0, 0);
 
   Serial.begin(115200);
   delay(80);
   Serial.println("READY BEEP1");
   Serial.flush();
 
-  /* audible boot confirmation (the tone task stops it automatically) */
-  tone(BUZZER_PIN, 1200, 120);
+  /* audible boot confirmation */
+  buzTone(1200, 100);
+  delay(120);
+  buzOff();
 
   btnRaw    = digitalRead(BUTTON_PIN);
   btnStable = btnRaw;

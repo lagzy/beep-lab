@@ -56,6 +56,17 @@ button[disabled]{opacity:.4;cursor:not-allowed}
 .chk input{appearance:none;width:12px;height:12px;border:2px solid var(--ink);background:#fff;cursor:pointer}
 .chk input:checked{background:var(--acc);border-color:var(--acc)}
 
+/* ---------- OUTPUT SWITCH ---------- */
+.outsel{display:flex;align-items:stretch;border:2px solid var(--ink);background:#fff}
+.outsel .mono-lbl{display:flex;align-items:center;padding:0 8px;border-right:2px solid var(--ink)}
+.outsel button{border:0;border-left:2px solid var(--ink);padding:8px 10px;background:#fff}
+.outsel button:first-of-type{border-left:0}
+.outsel button.on{background:var(--acc);color:#fff}
+.outsel button.ready::before{content:'';display:inline-block;width:6px;height:6px;background:#5aa64b;margin-right:6px;vertical-align:1px}
+.outsel button:disabled{opacity:.35;cursor:not-allowed}
+body.simple .outsel button{font-size:14px;padding:11px 13px}
+body.simple .outsel .mono-lbl{font-size:10px}
+
 /* ---------- CONTROLS ---------- */
 .controls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;padding:11px 14px;margin-bottom:10px}
 .ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -229,7 +240,11 @@ body.simple .stepper button.sm{width:48px;padding:10px 0;font-size:22px;line-hei
     <div class="transport">
       <button id="playBtn" class="pri">&#9654; PLAY</button>
       <button id="stopBtn" class="sm">&#9632; STOP</button>
-      <button id="devPlayBtn" class="sm" title="send the song to the ESP32 over USB and play it on the real buzzer">&#9654; PLAY ON DEVICE</button>
+      <div class="outsel" id="outSel" role="group" aria-label="Sound output">
+        <span class="mono-lbl">Sound</span>
+        <button id="outPc" class="sm on" title="play on this computer">&#128187; PC</button>
+        <button id="outEsp" class="sm" title="play on the ESP32 over USB">&#128268; ESP32</button>
+      </div>
       <label class="chk"><input type="checkbox" id="loopChk" checked> LOOP</label>
       <div class="spacer"></div>
       <div class="lcd" id="posLcd"><b>01/32</b><i>STEP</i></div>
@@ -399,6 +414,7 @@ let playing = false;
 let selectedNote = null;
 let dragState = null;
 let simpleMode = true;
+let output = 'pc';          // 'pc' = browser audio, 'esp' = real ESP32
 
 /* per-note colours (index stored on each note, cycles on creation) */
 const PALETTE = ['#e23d28','#e6973a','#c9b021','#5aa64b','#2f9e8f','#2f7fd0','#6b57c9','#b0419e','#8a6a4a','#2b2b2b','#0f8a5f','#c94f7c'];
@@ -444,7 +460,7 @@ function snapProject(){
   return {
     id: PL.currentId,
     name: sanitizeName($('plCurrentName') ? $('plCurrentName').textContent : ''),
-    bpm: S.bpm, steps: S.steps, gate: S.gate, duty: S.duty, pin: S.pin, loop: S.loop,
+    bpm: S.bpm, steps: S.steps, gate: S.gate, duty: S.duty, vol: S.vol, pin: S.pin, loop: S.loop,
     pattern: pattern,
     activeNotes: activeNotes.map(n => ({ step: n.step, len: n.len, midi: n.midi, vol: (n.vol == null ? 1 : n.vol), freq: (n.freq > 0 ? +n.freq.toFixed(3) : 0), color: Math.round(n.color) || 0 })),
     updated: Date.now()
@@ -711,7 +727,7 @@ function openProjectById(id, switchNow){
   PL.currentId = p.id;
   PL.currentName = p.name || '';
   applyState({
-    bpm: p.bpm, steps: p.steps, gate: p.gate, duty: p.duty, pin: p.pin, loop: (p.loop != null ? !!p.loop : true),
+    bpm: p.bpm, steps: p.steps, gate: p.gate, duty: p.duty, vol: p.vol, pin: p.pin, loop: (p.loop != null ? !!p.loop : true),
     pattern: Array.isArray(p.pattern) ? p.pattern : null,
     activeNotes: Array.isArray(p.activeNotes) ? p.activeNotes : null,
     silent: false
@@ -748,7 +764,7 @@ function importProjectFromFile(file, nameHint){
         try { o = JSON.parse(txt); } catch (jsonErr) { throw new Error('invalid json'); }
         if (!o || typeof o !== 'object' || (!Array.isArray(o.pattern) && !Array.isArray(o.activeNotes) && o.format !== 'beep1')) throw new Error('not a beep1 project');
         proj = {
-          bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, pin: +o.pin, loop: !!o.loop,
+          bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, vol: +o.vol, pin: +o.pin, loop: !!o.loop,
           pattern: Array.isArray(o.pattern) ? o.pattern : null,
           activeNotes: Array.isArray(o.activeNotes) ? o.activeNotes : null,
           name: sanitizeName(o.name || nameHint || file.name.replace(/\.[^.]+$/, ''))
@@ -781,7 +797,7 @@ function importProjectFromFile(file, nameHint){
     if (!created) return;
     openProjectById(created.id, true);
     applyState({
-      bpm: proj.bpm, steps: proj.steps, gate: proj.gate, duty: proj.duty, pin: proj.pin, loop: proj.loop,
+      bpm: proj.bpm, steps: proj.steps, gate: proj.gate, duty: proj.duty, vol: proj.vol, pin: proj.pin, loop: proj.loop,
       pattern: proj.pattern,
       activeNotes: proj.activeNotes,
       silent: false
@@ -806,7 +822,7 @@ function exportCurrentProject(){
   const out = {
     format: 'beep1', version: 4,
     name: p.name,
-    bpm: p.bpm, steps: p.steps, gate: p.gate, duty: p.duty, pin: p.pin, loop: p.loop,
+    bpm: p.bpm, steps: p.steps, gate: p.gate, duty: p.duty, vol: p.vol, pin: p.pin, loop: p.loop,
     pattern: Array.isArray(p.pattern) ? p.pattern : [],
     activeNotes: Array.isArray(p.activeNotes) ? p.activeNotes : undefined,
     exported: Date.now()
@@ -950,6 +966,17 @@ function blip(note, dur){
   }catch(e){}
 }
 
+/* note audition follows the selected output */
+function previewNote(note){
+  if ((note.vol == null ? 1 : note.vol) <= 0) return;
+  if (output === 'esp' && devWriter){
+    const f = Math.max(20, Math.min(20000, Math.round(noteFreq(note))));
+    sendDevice(['BEEP ' + f + ' 90']).catch(() => {});
+  } else {
+    blip(note, .09);
+  }
+}
+
 function play(){
   stop(true);
   ensureCtx();
@@ -977,12 +1004,22 @@ function stop(keepCursor){
   drawGrid();
 }
 function togglePlay(){
+  if (output === 'esp'){
+    if (devPlaying) stopDevice();
+    else startDevice(cursorStep);
+    return;
+  }
   if (playing){ if (playStep >= 0) cursorStep = playStep; stop(true); }
   else play();
 }
 function syncTransport(){
-  $('playBtn').innerHTML = playing ? '&#10074;&#10074; PAUSE' : '&#9654; PLAY';
-  $('playBtn').classList.toggle('on', playing);
+  const dev = output === 'esp';
+  const active = dev ? devPlaying : playing;
+  $('playBtn').innerHTML = active
+    ? (dev ? '&#9632; STOP' : '&#10074;&#10074; PAUSE')
+    : '&#9654; PLAY';
+  $('playBtn').classList.toggle('on', active);
+  syncOutSwitch();
 }
 
 /* ============ PLAYHEAD LOOP ============ */
@@ -1005,8 +1042,10 @@ function tick(){
   requestAnimationFrame(tick);
 }
 function updateLcd(){
-  posLcd.textContent = pad2((playing ? playStep : cursorStep) + 1) + '/' + S.steps;
-  $('posLcd').classList.toggle('red', playing);
+  const devActive = output === 'esp' && devPlaying && devStep >= 0;
+  const shown = playing ? playStep : (devActive ? devStep : cursorStep);
+  posLcd.textContent = pad2(shown + 1) + '/' + S.steps;
+  $('posLcd').classList.toggle('red', playing || devActive);
 }
 
 /* ============ DRAW ============ */
@@ -1109,15 +1148,17 @@ function drawGrid(){
     }
   }
 
-  /* playhead */
-  if (playStep >= 0 && playStep < S.steps){
+  /* playhead — browser audio or the ESP32 device */
+  const devHead = (output === 'esp' && devPlaying && devStep >= 0 && devStep < S.steps) ? devStep : -1;
+  const headStep = (playStep >= 0 && playStep < S.steps) ? playStep : devHead;
+  if (headStep >= 0){
     g.fillStyle = 'rgba(226,61,40,.13)';
-    g.fillRect(playStep * cellW, RULERH, cellW, H - RULERH);
+    g.fillRect(headStep * cellW, RULERH, cellW, H - RULERH);
     g.fillStyle = '#e23d28';
-    g.fillRect(playStep * cellW, 0, 2, H);
+    g.fillRect(headStep * cellW, 0, 2, H);
   }
   /* cursor */
-  if (!playing){
+  if (!playing && !(output === 'esp' && devPlaying)){
     g.fillStyle = '#e23d28';
     const x = cursorStep * cellW;
     g.beginPath(); g.moveTo(x, RULERH - 8); g.lineTo(x + 7, RULERH - 1); g.lineTo(x, RULERH - 1); g.closePath(); g.fill();
@@ -1259,7 +1300,14 @@ gc.addEventListener('mousedown', e => {
   const { px, py } = canvasCoords(e);
   if (py < RULERH){
     const s = rulerFrom(e);
-    if (s !== null){ cursorStep = s; if (playing) play(); drawGrid(); }
+    if (s !== null){
+      cursorStep = s;
+      if (output === 'esp' && devPlaying){
+        devStep = s;
+        sendDevice(['SEEK ' + s]).catch(() => {});
+      } else if (playing) play();
+      drawGrid();
+    }
     return;
   }
   const c = cellFrom(e);
@@ -1287,7 +1335,7 @@ gc.addEventListener('mousedown', e => {
   const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1, freq: 0, color: nextPaletteColor() };
   activeNotes.push(note);
   selectedNote = note.id;
-  if (!playing) blip(note, .09);
+  if (!playing && !(output === 'esp' && devPlaying)) previewNote(note);
   dragState = { type: 'paint' };
   updateNotePanel(); updateStatus(); drawGrid();
 });
@@ -1329,7 +1377,7 @@ gc.addEventListener('touchstart', e => {
     const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1, freq: 0, color: nextPaletteColor() };
     activeNotes.push(note);
     selectedNote = note.id;
-    if (!playing) blip(note, .09);
+    if (!playing && !(output === 'esp' && devPlaying)) previewNote(note);
     dragState = { type: 'paint' };
   }
   updateNotePanel(); updateStatus(); drawGrid();
@@ -1379,7 +1427,7 @@ function paintAt(c){
     const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1, freq: 0, color: nextPaletteColor() };
     activeNotes.push(note);
     selectedNote = note.id;
-    if (!playing) blip(note, .09);
+    if (!playing && !(output === 'esp' && devPlaying)) previewNote(note);
     renderNoteList(); updateStatus(); drawGrid(); buildCode();
     if (playing) liveRestart();
   } else {
@@ -1409,6 +1457,7 @@ function setSteps(n){
     if (nt.step + nt.len > S.steps) nt.len = Math.max(1, S.steps - nt.step);
   }
   syncStepsUI(); layout(); refreshAudio();
+  if (output === 'esp') deviceReloadSoon();
 }
 bind('bpm', () => { S.bpm = +$('bpm').value; $('bpmOut').textContent = S.bpm + ' BPM'; refreshAudio(); });
 bind('steps', () => { setSteps(+$('steps').value); });
@@ -1418,6 +1467,7 @@ bind('duty', () => { S.duty = +$('duty').value; refreshAudio(); });
 bind('vol', () => {
   S.vol = (+$('vol').value) / 100; $('volOut').textContent = $('vol').value;
   if (master && ac){ try{ master.gain.setTargetAtTime(S.vol, ac.currentTime, .02); }catch(e){ master.gain.value = S.vol; } }
+  if (output === 'esp') deviceSyncParams();
   updateStatus(); drawGrid();
 });
 bind('pin', () => { S.pin = Math.max(1, Math.min(48, +$('pin').value || 4)); buildCode(); });
@@ -1447,6 +1497,11 @@ $('uiBtn').onclick = () => {
 
 let dirtyT = null;
 function reseekRestart(){
+  if (output === 'esp'){
+    updateStatus(); drawGrid(); buildCode();
+    deviceSyncParams();
+    return;
+  }
   if (!playing) { updateStatus(); drawGrid(); buildCode(); return; }
   const s = playStep >= 0 ? playStep : cursorStep;
   cursorStep = ((s % S.steps) + S.steps) % S.steps;
@@ -1456,15 +1511,23 @@ function reseekRestart(){
 function liveRestart(){ clearTimeout(dirtyT); dirtyT = setTimeout(reseekRestart, 180); }
 function refreshAudio(){
   updateStatus(); drawGrid(); buildCode(); renderNoteList();
-  if (playing) liveRestart();
+  if (output === 'esp') deviceSyncParams();
+  else if (playing) liveRestart();
 }
-function edit(){ refreshAudio(); markDirty(); }
+function edit(){
+  refreshAudio(); markDirty();
+  if (output === 'esp') deviceReloadSoon();
+}
 
 $('playBtn').onclick = () => { togglePlay(); };
-$('stopBtn').onclick = () => stop();
+$('stopBtn').onclick = () => { if (output === 'esp') stopDevice(); else stop(); };
 
-/* ============ DEVICE PLAYBACK (Web Serial -> ESP32 firmware) ============ */
-let devPort = null, devWriter = null, devPlaying = false, devBusy = false, devFresh = false;
+/* ============ OUTPUT ROUTING + DEVICE PLAYBACK (Web Serial -> ESP32) ============ */
+let devPort = null, devWriter = null, devReader = null, devPlaying = false, devBusy = false, devFresh = false;
+let devStep = -1, devRx = '';
+let devReloadTimer = null, devParamTimer = null;
+
+const devSleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* protocol lines understood by firmware/src/main.cpp */
 function deviceSongLines(){
@@ -1472,74 +1535,262 @@ function deviceSongLines(){
     'RESET',
     'BPM ' + Math.round(S.bpm),
     'STEPS ' + Math.round(S.steps),
-    'GATE ' + Math.round(S.gate * 100)
+    'GATE ' + Math.round(S.gate * 100),
+    'DUTY ' + Math.round(S.duty * 100),
+    'VOL ' + Math.round(S.vol * 100),
+    'LOOP ' + (S.loop ? 1 : 0),
+    'BUTTON 0'                         /* lock the local button while the song reloads */
   ];
   const notes = activeNotes.slice().sort((a, b) => (a.step - b.step) || (a.midi - b.midi));
   for (const n of notes){
     if (n.vol === 0) continue;
     const f = Math.max(0, Math.min(65535, Math.round(noteFreq(n))));
-    lines.push('N ' + Math.round(n.step) + ' ' + Math.max(1, Math.round(n.len)) + ' ' + f);
+    const vol = Math.round((n.vol == null ? 1 : n.vol) * 100);
+    lines.push('N ' + Math.round(n.step) + ' ' + Math.max(1, Math.round(n.len)) + ' ' + f + ' ' + vol);
   }
-  lines.push('PLAY ' + (S.loop ? 1 : 0));
+  lines.push('BUTTON 1');             /* enable the local button after the song is loaded */
   return lines;
 }
-function syncDevBtn(){
-  const b = $('devPlayBtn');
-  if (!b) return;
-  b.innerHTML = devPlaying ? '&#9632; STOP DEVICE' : '&#9654; PLAY ON DEVICE';
-  b.classList.toggle('on', devPlaying);
+function deviceHasNotes(lines){
+  return (lines || deviceSongLines()).some(l => l.startsWith('N '));
 }
-const devSleep = ms => new Promise(r => setTimeout(r, ms));
+function devicePlayLine(step){
+  const s = Math.max(0, Math.min(S.steps - 1, Math.round(step) || 0));
+  return 'PLAY ' + (S.loop ? 1 : 0) + (s ? ' ' + s : '');
+}
+
+function syncOutSwitch(){
+  const pc = $('outPc'), esp = $('outEsp');
+  if (pc) pc.classList.toggle('on', output === 'pc');
+  if (esp){
+    esp.classList.toggle('on', output === 'esp');
+    esp.classList.toggle('ready', !!(devPort && devWriter));
+  }
+}
+
+/* firmware reports "STATE 1 <loop>", "STATE 0" and "P <step>" while playing */
+function handleDeviceLine(line){
+  if (!line) return;
+  if (line.startsWith('P ')){
+    const n = parseInt(line.slice(2), 10);
+    if (Number.isFinite(n) && n >= 0 && n < S.steps){
+      devStep = n;
+      const x = n * cellW, sl = sc.scrollLeft, sw = sc.clientWidth;
+      if (x < sl + 10 || x > sl + sw - 40) sc.scrollLeft = Math.max(0, x - sw * .35);
+    }
+    return;
+  }
+  if (line === 'STATE 0'){
+    devPlaying = false;
+    devStep = -1;
+    syncTransport();
+    return;
+  }
+  if (line.startsWith('STATE 1')){
+    devPlaying = true;
+    if (devStep < 0){ devStep = 0; sc.scrollLeft = 0; }
+    syncTransport();
+  }
+}
+
+async function deviceReadLoop(){
+  const reader = devReader;
+  const dec = new TextDecoder();
+  try {
+    while (reader && devReader === reader){
+      const { value, done } = await reader.read();
+      if (done) break;
+      devRx += dec.decode(value, { stream: true });
+      let i;
+      while ((i = devRx.indexOf('\n')) >= 0){
+        handleDeviceLine(devRx.slice(0, i).replace(/\r$/, ''));
+        devRx = devRx.slice(i + 1);
+      }
+      if (devRx.length > 4096) devRx = devRx.slice(-512);
+    }
+  } catch (e) { /* port closed or unplugged */ }
+  finally {
+    try { if (reader) reader.releaseLock(); } catch (e) {}
+    if (devReader === reader) devReader = null;
+  }
+}
 
 async function openDevice(){
   if (!('serial' in navigator)) throw new Error('Web Serial needs Chrome or Edge');
   if (devPort && devPort.readable) return;
-  if (!devPort) devPort = await navigator.serial.requestPort();
+  if (!devPort){
+    let ports = [];
+    try { ports = await navigator.serial.getPorts(); } catch (e) {}
+    devPort = ports.find(p => {
+      try { return p.getInfo().usbVendorId === 0x1a86; } catch (e) { return false; }
+    }) || (ports.length === 1 ? ports[0] : null);
+    if (!devPort) devPort = await navigator.serial.requestPort();
+  }
   await devPort.open({ baudRate: 115200 });
   try { await devPort.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) {}
   devWriter = devPort.writable.getWriter();
+  devReader = devPort.readable.getReader();
+  devRx = '';
+  deviceReadLoop();
   devFresh = true;                 /* opening the port usually resets the ESP32 */
+  syncOutSwitch();
 }
+
+async function closeDevice(){
+  const reader = devReader, writer = devWriter, port = devPort;
+  devReader = null; devWriter = null; devPort = null;
+  devPlaying = false; devStep = -1; devFresh = false; devRx = '';
+  try { if (reader) await reader.cancel(); } catch (e) {}
+  try { if (reader) reader.releaseLock(); } catch (e) {}
+  try { if (writer) writer.releaseLock(); } catch (e) {}
+  try { if (port) await port.close(); } catch (e) {}
+  syncTransport();
+}
+
 async function sendDevice(lines){
   if (!devWriter) throw new Error('device is not connected');
   const bytes = new TextEncoder().encode(lines.join('\n') + '\n');
   await devWriter.write(bytes);
 }
-async function deviceToggle(){
-  if (devBusy) return;
+
+/* live BPM / gate / timbre / volume / loop updates (no song reload) */
+function deviceSyncParams(){
+  if (output !== 'esp' || !devWriter) return;
+  clearTimeout(devParamTimer);
+  devParamTimer = setTimeout(() => {
+    if (output !== 'esp' || !devWriter) return;
+    sendDevice([
+      'BPM ' + Math.round(S.bpm),
+      'GATE ' + Math.round(S.gate * 100),
+      'DUTY ' + Math.round(S.duty * 100),
+      'VOL ' + Math.round(S.vol * 100),
+      'LOOP ' + (S.loop ? 1 : 0)
+    ]).catch(() => {});
+  }, 35);
+}
+
+/* note edits: reload the whole song and resume from the current step */
+function deviceReloadSoon(fromStep){
+  if (output !== 'esp' || !devWriter) return;
+  clearTimeout(devReloadTimer);
+  devReloadTimer = setTimeout(async () => {
+    if (output !== 'esp' || !devWriter) return;
+    const wasPlaying = devPlaying;
+    const step = Math.max(0, Math.min(S.steps - 1,
+      Math.round(fromStep != null ? fromStep : (devStep >= 0 ? devStep : 0))));
+    const lines = deviceSongLines();
+    if (wasPlaying && deviceHasNotes(lines)){
+      lines.push(devicePlayLine(step));
+      devPlaying = true;
+      devStep = step;
+    } else {
+      devPlaying = false;
+      devStep = -1;
+    }
+    try { await sendDevice(lines); }
+    catch (e){
+      devPlaying = false; devStep = -1;
+      await closeDevice();
+      toast('device: ' + (e && e.message ? e.message : e), true);
+    }
+    syncTransport();
+  }, 180);
+}
+
+async function startDevice(fromStep){
+  if (devBusy || output !== 'esp') return;
   devBusy = true;
-  const btn = $('devPlayBtn');
+  const btn = $('playBtn');
   if (btn) btn.disabled = true;
   try {
-    if (devPlaying){
-      await sendDevice(['STOP']);
-      devPlaying = false;
-      toast('device stopped');
-    } else {
-      await openDevice();
-      if (devFresh){ await devSleep(1500); devFresh = false; }  /* wait for boot after opening */
-      await sendDevice(deviceSongLines());
-      devPlaying = true;
-      toast('playing on the ESP32');
+    await openDevice();
+    if (devFresh){ await devSleep(1500); devFresh = false; }  /* wait for boot after opening */
+    const lines = deviceSongLines();
+    if (!deviceHasNotes(lines)){
+      toast('add a note first', true);
+      return;
     }
+    const step = Math.max(0, Math.min(S.steps - 1, Math.round(fromStep) || 0));
+    lines.push(devicePlayLine(step));
+    await sendDevice(lines);
+    devPlaying = true;
+    devStep = step;
+    if (sc) sc.scrollLeft = Math.max(0, step * cellW - sc.clientWidth * .35);
+    toast('playing on the ESP32');
   } catch (err){
-    devPlaying = false;
-    devWriter = null;
-    try { if (devPort) await devPort.close(); } catch (e) {}
-    devPort = null;
+    await closeDevice();
     toast('device: ' + (err && err.message ? err.message : err), true);
   } finally {
     devBusy = false;
     if (btn) btn.disabled = false;
-    syncDevBtn();
+    syncTransport();
   }
 }
-$('devPlayBtn').onclick = deviceToggle;
+
+async function stopDevice(){
+  if (devBusy) return;
+  devBusy = true;
+  const btn = $('playBtn');
+  if (btn) btn.disabled = true;
+  try { if (devWriter) await sendDevice(['STOP']); } catch (e) {}
+  devPlaying = false;
+  devStep = -1;
+  devBusy = false;
+  if (btn) btn.disabled = false;
+  syncTransport();
+}
+
+/* leaving ESP mode: stop, clear the loaded song, and release the port */
+async function shutdownDevice(){
+  if (devWriter){
+    try { await sendDevice(['STOP', 'RESET', 'BUTTON 0']); await devSleep(60); } catch (e) {}
+  }
+  await closeDevice();
+}
+
+async function selectOutput(kind){
+  if (kind === output || devBusy) return;
+  if (kind === 'pc'){
+    output = 'pc';
+    stop(true);
+    syncTransport();
+    await shutdownDevice();
+    toast('sound from this computer');
+    return;
+  }
+
+  output = 'esp';
+  stop(true);                       /* browser audio off */
+  syncTransport();
+  try {
+    await openDevice();
+    if (devFresh){ await devSleep(1500); devFresh = false; }
+    await sendDevice(deviceSongLines());   /* load, do not start */
+    devPlaying = false;
+    devStep = -1;
+    toast('ESP32 ready — press PLAY or its button');
+  } catch (err){
+    output = 'pc';
+    await closeDevice();
+    toast('ESP32: ' + (err && err.message ? err.message : err), true);
+  }
+  syncTransport();
+}
+
+$('outPc').onclick = () => selectOutput('pc');
+$('outEsp').onclick = () => selectOutput('esp');
+
 try {
+  if (!('serial' in navigator)){
+    const b = $('outEsp');
+    if (b){ b.disabled = true; b.title = 'Use Chrome or Edge for ESP32'; }
+  }
   if ('serial' in navigator) navigator.serial.addEventListener('disconnect', e => {
     if (e.target === devPort){
-      devPort = null; devWriter = null; devPlaying = false; devFresh = false;
-      syncDevBtn();
+      devPort = null; devWriter = null; devReader = null;
+      devPlaying = false; devStep = -1; devFresh = false; devRx = '';
+      if (output === 'esp') output = 'pc';
+      syncTransport();
       toast('device unplugged', true);
     }
   });
@@ -1924,7 +2175,7 @@ function makeJson(){
   return JSON.stringify({
     format: 'beep1', version: 4,
     bpm: S.bpm, steps: S.steps, stepMs: Math.round(60000 / (S.bpm * 4)),
-    gate: S.gate, duty: S.duty, pin: S.pin,
+    gate: S.gate, duty: S.duty, vol: S.vol, pin: S.pin,
     pattern: pattern,
     activeNotes: activeNotes.map(n => ({ step: n.step, len: n.len, midi: n.midi, vol: n.vol, freq: (n.freq > 0 ? +n.freq.toFixed(3) : 0), color: Math.round(n.color) || 0 })),
     notes: notes
@@ -1960,7 +2211,7 @@ function importJson(t){
   const o = JSON.parse(t);
   if (!o || typeof o !== 'object' || (!Array.isArray(o.pattern) && !Array.isArray(o.activeNotes) && o.format !== 'beep1')) throw new Error('not a beep1 file');
   applyState({
-    bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, pin: +o.pin,
+    bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, vol: +o.vol, pin: +o.pin,
     pattern: Array.isArray(o.pattern) ? o.pattern : null,
     activeNotes: Array.isArray(o.activeNotes) ? o.activeNotes : null
   });
@@ -2036,6 +2287,7 @@ function applyState(o){
   if (isFinite(o.bpm)) S.bpm = Math.max(40, Math.min(320, Math.round(o.bpm)));
   if (isFinite(o.steps)) S.steps = Math.max(1, Math.min(MAXSTEPS, Math.round(o.steps)));
   if (isFinite(o.gate)) S.gate = Math.max(.05, Math.min(1, o.gate));
+  if (isFinite(o.vol)) S.vol = Math.max(0, Math.min(1, +o.vol));
   if (isFinite(o.duty)){
     const presets = [.125, .25, .5, .75];
     S.duty = presets.reduce((a, b) => Math.abs(b - o.duty) < Math.abs(a - o.duty) ? b : a);
@@ -2070,11 +2322,13 @@ function applyState(o){
   $('bpm').value = S.bpm; $('bpmOut').textContent = S.bpm + ' BPM';
   $('gate').value = Math.round(S.gate * 100); $('gateOut').textContent = Math.round(S.gate * 100) + ' %';
   $('duty').value = String(S.duty);
+  $('vol').value = Math.round(S.vol * 100); $('volOut').textContent = Math.round(S.vol * 100);
   $('pin').value = S.pin;
   cursorStep = Math.min(cursorStep, S.steps - 1);
   updateNotePanel();
   renderNoteList();
   syncStepsUI(); layout(); refreshAudio();
+  if (output === 'esp') deviceReloadSoon();
 }$('codeBtn').onclick = () => {
   const b = $('codeBox');
   b.classList.toggle('open');
@@ -2156,6 +2410,7 @@ window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() =
 
 $('bpmOut').textContent = S.bpm + ' BPM';
 $('gateOut').textContent = Math.round(S.gate * 100) + ' %';
+$('vol').value = Math.round(S.vol * 100);
 $('volOut').textContent = Math.round(S.vol * 100);
 // boot: restore last project if present, otherwise demo
 (function boot(){
