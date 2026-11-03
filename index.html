@@ -1496,6 +1496,7 @@ async function openDevice(){
   if (devPort && devPort.readable) return;
   if (!devPort) devPort = await navigator.serial.requestPort();
   await devPort.open({ baudRate: 115200 });
+  try { await devPort.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) {}
   devWriter = devPort.writable.getWriter();
   devFresh = true;                 /* opening the port usually resets the ESP32 */
 }
