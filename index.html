@@ -99,6 +99,52 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.err{background:var(--acc);border-color:var(--acc)}
 .note-panel{margin-top:10px;display:none;align-items:center;gap:14px;flex-wrap:wrap}
+
+/* ---------- PROJECT RAIL ---------- */
+.proj-rail{display:flex;flex-direction:column;gap:8px;padding:10px 11px;border:2px solid var(--ink);background:var(--paper);width:212px;align-self:flex-end}
+.proj-rail[hidden]{display:none}
+.rail-head{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.rail-hct{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.rail-hct button{padding:6px 9px;font-size:9px}
+.rail-list{border:2px solid var(--ink);background:#fff;max-height:208px;overflow:auto}
+.rail-list::-webkit-scrollbar{width:10px}
+.rail-list::-webkit-scrollbar-track{background:#fff}
+.rail-list::-webkit-scrollbar-thumb{background:var(--ink)}
+.proj-item{display:flex;align-items:center;gap:8px;padding:8px 9px;cursor:pointer;border-bottom:1px solid var(--line);user-select:none}
+.proj-item:hover{background:var(--soft)}
+.proj-item.cur{background:#fff;border-left:3px solid var(--acc);padding-left:6px}
+.proj-item .pname{flex:1 1 auto;min-width:0;font-family:'VT323',monospace;font-size:15px;line-height:1;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-item .pmod{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.proj-item .pact{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);border:1px solid var(--acc);padding:2px 5px;background:var(--paper)}
+.proj-item .pmenu{position:relative;width:0;height:0}
+.proj-item .pmenu menu{position:absolute;right:0;top:100%;z-index:50;min-width:150px;background:var(--paper);border:2px solid var(--ink);padding:4px 0;display:none}
+.proj-item .pmenu menu.show{display:block}
+.proj-item .pmenu button{display:block;width:100%;text-align:left;border:none;background:var(--paper);color:var(--ink);font-family:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;cursor:pointer;border-bottom:1px solid var(--line)}
+.proj-item .pmenu button:hover{background:var(--ink);color:#fff}
+.rail-foot .hint{font-size:8px;line-height:1.5;text-align:left;margin-top:0}
+
+/* ---------- NOTE INSPECTOR (side panel) ---------- */
+.stage-row{display:flex;align-items:flex-start;gap:10px}
+.stage-row .gridwrap{flex:1 1 auto;min-width:0}
+.note-rail{flex:0 0 258px;display:flex;flex-direction:column;gap:8px;padding:10px 11px;border:2px solid var(--ink);background:var(--paper);max-height:560px}
+.note-rail[hidden]{display:none}
+.note-list{max-height:430px}
+.nrow{display:flex;align-items:center;gap:7px;padding:7px 8px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.nrow:hover{background:var(--soft)}
+.nrow.sel{background:#fff;border-left:3px solid var(--acc);padding-left:5px}
+.nswatch{width:15px;height:15px;border:2px solid var(--ink);flex:0 0 auto;padding:0;cursor:pointer}
+.nswatch:hover{outline:2px solid var(--acc);outline-offset:1px}
+.nrow .ninfo{flex:1 1 auto;min-width:0}
+.nrow .nname{font-family:'VT323',monospace;font-size:16px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nrow .nmeta{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.nrow input[type=number]{width:56px;padding:3px 4px;font-size:10px}
+.nrow .ndel{border:none;background:none;color:var(--acc);font-size:13px;line-height:1;padding:2px 4px;cursor:pointer}
+.nrow .ndel:hover{background:var(--acc);color:#fff;outline:2px solid var(--acc)}
+.note-rail .nfld{display:flex;flex-direction:column;gap:2px}
+@media(max-width:900px){
+  .stage-row{flex-wrap:wrap}
+  .note-rail{flex:1 1 100%;max-height:none}
+}
 .note-panel .fld{display:flex;flex-direction:column;gap:4px}
 .note-panel label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .note-panel input[type=number]{width:64px}
@@ -158,10 +204,7 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
     </div>
     <div class="ctl">
       <span class="mono-lbl">Buzzer type</span>
-      <div class="row"><select id="mode">
-        <option value="active" selected>ACTIVE beeper</option>
-        <option value="passive">PASSIVE piezo</option>
-      </select></div>
+      <div class="row"><output style="font-size:10px;letter-spacing:.1em">PASSIVE piezo</output></div>
     </div>
     <div class="ctl">
       <span class="mono-lbl">Duty / timbre</span>
@@ -193,22 +236,60 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
         <button class="sm" id="demoBtn">DEMO</button>
         <button class="sm" id="clearBtn">CLEAR</button>
       </div>
+    </div>      <button id="plLibBtn" class="sm" title="open project library">&#9776; PROJECTS</button>
+      <button id="noteRailBtn" class="sm" title="show/hide the note inspector">&#9834; NOTES</button>
+      <span class="mono-lbl" id="plCurrentLbl" style="display:none">CURRENT</span>
+      <span class="mono-lbl" id="plCurrentName" style="display:none;font-family:'VT323',monospace;font-size:17px;line-height:1;letter-spacing:.02em"></span>
+
+      </div>
+
+  <div class="stage-row">
+    <div class="gridwrap">
+      <div class="labels"><canvas id="labels"></canvas></div>
+      <div class="scroller" id="scroller"><canvas id="grid"></canvas></div>
     </div>
+
+    <aside class="note-rail" id="noteRail">
+      <div class="rail-head">
+        <span class="mono-lbl">NOTE INSPECTOR</span>
+        <div class="rail-hct">
+          <span class="mono-lbl" id="noteCount">0 NOTES</span>
+          <button class="sm" id="noteRailClose" title="hide the note inspector">CLOSE</button>
+        </div>
+      </div>
+      <div class="rail-list note-list" id="noteList"></div>
+      <div class="rail-foot">
+        <span class="hint">each note has its own colour &amp; frequency &mdash; click a row to select it &middot; click the swatch to recolour</span>
+      </div>
+    </aside>
   </div>
 
-  <div class="gridwrap">
-    <div class="labels"><canvas id="labels"></canvas></div>
-    <div class="scroller" id="scroller"><canvas id="grid"></canvas></div>
-  </div>
+  <aside class="panel proj-rail" id="projRail" hidden>
+    <div class="rail-head">
+      <span class="mono-lbl">PROJECT LIBRARY</span>
+      <div class="rail-hct">
+        <button class="sm" id="plCloseBtn">CLOSE</button>
+        <button class="sm" id="plNewBtn">NEW</button>
+        <button class="sm" id="plExportBtn" title="export current project as a portable .json">EXPORT</button>
+        <button class="sm" id="plImportBtn" title="import a saved project (creates a new project)">IMPORT</button>
+      </div>
+    </div>
+    <div class="rail-list" id="plList"></div>
+    <div class="rail-foot">
+      <span class="hint" id="plFoot">projects are saved in this browser&rsquo;s local storage &mdash; they persist across app updates as long as this file keeps the same origin and key</span>
+    </div>
+    <input type="file" id="plImportFile" accept=".json,.b1p" style="display:none">
+  </aside>
+
 
   <div class="panel note-panel" id="notePanel">
     <span class="mono-lbl">Selected note</span>
     <div class="fld"><label>Pitch</label><span class="nm" id="nPitch">—</span></div>
     <div class="fld"><label>Start step</label><input type="number" id="nStep" min="1"></div>
-    <div class="fld"><label>Length (steps)</label><input type="number" id="nLen" min="0.1" step="0.1"></div>
+    <div class="fld"><label>Length (steps)</label><input type="number" id="nLen" min="1" step="1"></div>
     <div class="fld"><label>Volume</label><div class="row"><input type="range" id="nVol" min="0" max="100" value="100"><output id="nVolOut">100</output></div></div>
     <button class="sm" id="nDel">DELETE NOTE</button>
-    <span class="mono-lbl" id="nHint">drag body = move &middot; drag edges = resize &middot; shift+drag = volume</span>
+    <span class="mono-lbl" id="nHint">drag body = move &middot; drag edges = resize &middot; shift+drag = volume &middot; freq &amp; colour in the NOTE INSPECTOR</span>
   </div>
 
   <div class="panel bottom" style="margin-top:10px">
@@ -230,8 +311,8 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
   </div>
 
   <div class="hint">
-    click grid = draw note &middot; right-click / drag = erase &middot; drag note body = move &middot; drag note edges = resize length &middot; shift+drag = volume &middot;
-    click ruler = set start &middot; <b>SPACE</b> play/stop &middot; <b>&larr;&rarr;</b> move start &middot; <b>L</b> loop &middot; <b>DEL</b> clear
+    click = paint note &middot; drag = lay a stroke of notes &middot; click a note = move it &middot; drag a note corner = resize length &middot; shift+drag = volume &middot; right-click = erase note &middot;
+    stack another pitch on the same step = chord (playback arpeggios the voices) &middot; edit each note&rsquo;s frequency &amp; colour in the NOTE INSPECTOR &middot; click ruler = set start &middot; <b>SPACE</b> play/stop &middot; <b>&larr;&rarr;</b> move start &middot; <b>L</b> loop &middot; <b>DEL</b> delete / clear &middot; <b>P</b> project library
   </div>
 </div>
 
@@ -246,18 +327,445 @@ const LOW  = 48, HIGH = 84;              // C3 .. C6
 const ROWS = HIGH - LOW + 1;             // 37
 const ROWH = 13, RULERH = 26, LABELW = 64, MAXSTEPS = 128;
 const SR_EXPORT = 44100;
+const ARP_SEC = 0.006;   // chord arpeggio swap rate — matches ARP_MS in the exported .ino
 
 /* ============ STATE ============ */
-const S = { steps:32, bpm:150, gate:.85, duty:.5, vol:.75, pin:4, loop:true, mode:'active' };
-const ACTIVE_FREQ = 2300;   // typical fixed pitch of an active buzzer (Hz)
-let pat   = new Int8Array(MAXSTEPS).fill(-1);   // passive mode data
-let activeNotes = [];       // active mode data: {id, step, len, midi, vol}
+const S = { steps:32, bpm:150, gate:.85, duty:.5, vol:.75, pin:4, loop:true };
+let activeNotes = [];       // note list: {id, step, len, midi, vol, freq, color}
 let nextNoteId = 1;
 let cellW = 22;
 let hover = null, cursorStep = 0, playStep = -1;
 let playing = false;
 let selectedNote = null;
 let dragState = null;
+
+/* per-note colours (index stored on each note, cycles on creation) */
+const PALETTE = ['#e23d28','#e6973a','#c9b021','#5aa64b','#2f9e8f','#2f7fd0','#6b57c9','#b0419e','#8a6a4a','#2b2b2b','#0f8a5f','#c94f7c'];
+let nextColor = 0;
+function nextPaletteColor(){ const c = nextColor % PALETTE.length; nextColor++; return c; }
+function noteColor(c){ const i = ((Math.round(c) % PALETTE.length) + PALETTE.length) % PALETTE.length; return PALETTE[i]; }
+
+/* ============ PROJECT LIBRARY ============ */
+const PL = {
+  key: 'beep1.projects.v1',
+  currentId: null,
+  dirtyT: null,
+  list: []
+};
+function nowLabel(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return 'Project ' + yyyy + '-' + mm + '-' + dd + ' ' + hh + ':' + mi;
+}
+function uid(){
+  return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
+}
+function sanitizeName(raw){
+  let n = (raw || '').trim();
+  n = n.replace(/\s+/g, ' ');
+  if (n.length === 0) n = nowLabel();
+  if (n.length > 32) n = n.slice(0, 32);
+  return n;
+}
+function snapProject(){
+  // flattened per-step pattern kept for older files; activeNotes is the source of truth
+  const pattern = new Array(S.steps).fill(-1);
+  for (const n of activeNotes){
+    for (let k = 0; k < n.len; k++){
+      const s = Math.round(n.step) + k;
+      if (s >= 0 && s < S.steps) pattern[s] = n.midi;
+    }
+  }
+  return {
+    id: PL.currentId,
+    name: sanitizeName($('plCurrentName') ? $('plCurrentName').textContent : ''),
+    bpm: S.bpm, steps: S.steps, gate: S.gate, duty: S.duty, pin: S.pin, loop: S.loop,
+    pattern: pattern,
+    activeNotes: activeNotes.map(n => ({ step: n.step, len: n.len, midi: n.midi, vol: (n.vol == null ? 1 : n.vol), freq: (n.freq > 0 ? +n.freq.toFixed(3) : 0), color: Math.round(n.color) || 0 })),
+    updated: Date.now()
+  };
+}
+function markDirty(){
+  if (PL.currentId == null) return;
+  clearTimeout(PL.dirtyT);
+  PL.dirtyT = setTimeout(() => saveCurrentToLibrary(), 700);
+}
+function saveCurrentToLibrary(){
+  if (PL.currentId == null) return;
+  const snap = snapProject();
+  const lib = loadLibrary();
+  const idx = lib.findIndex(p => p.id === PL.currentId);
+  if (idx >= 0) lib[idx] = snap;
+  else lib.unshift(snap);
+  PL.list = lib;
+  writeLibrary(lib);
+  renderLibrary();
+}
+function renameCurrent(newName){
+  const n = sanitizeName(newName);
+  if (n.length === 0) return false;
+  if (PL.currentId == null) return false;
+  const lib = loadLibrary();
+  const p = lib.find(p => p.id === PL.currentId);
+  if (!p) return false;
+  p.name = n;
+  PL.list = lib;
+  PL.currentName = n;
+  writeLibrary(lib);
+  renderLibrary();
+  updateCurrentLabel();
+  return true;
+}
+function loadLibrary(){
+  try {
+    const raw = localStorage.getItem(PL.key);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch (e) { return []; }
+}
+function writeLibrary(lib){
+  try { localStorage.setItem(PL.key, JSON.stringify(lib)); } catch (e) { toast('project library storage failed', true); }
+}
+function projectNotesCount(p){
+  if (Array.isArray(p.activeNotes)) return p.activeNotes.length;
+  let c = 0;
+  if (Array.isArray(p.pattern)) for (let i = 0; i < p.pattern.length; i++) if (p.pattern[i] >= 0) c++;
+  return c;
+}
+function projectLengthSec(p){
+  const ss = 60 / (p.bpm || 150) / 4;
+  return (ss * (p.steps || 16));
+}
+function renderLibrary(){
+  const el = $('plList');
+  if (!el) return;
+  el.innerHTML = '';
+  for (let i = 0; i < PL.list.length; i++) {
+    const p = PL.list[i];
+    const row = document.createElement('div');
+    row.className = 'proj-item' + (p.id === PL.currentId ? ' cur' : '');
+    row.dataset.id = p.id;
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'pname';
+    nameSpan.textContent = p.name || 'Untitled';
+    const modSpan = document.createElement('span');
+    modSpan.className = 'pmod';
+    modSpan.textContent = (p.steps || 16) + 'st · ' + Math.round(projectLengthSec(p) * 100) / 100 + 's · ' + (projectNotesCount(p)) + 'n';
+    const actSpan = document.createElement('span');
+    actSpan.className = 'pact';
+    actSpan.textContent = p.id === PL.currentId ? 'CURRENT' : '';
+    const menuWrap = document.createElement('span');
+    menuWrap.className = 'pmenu';
+    const btn = document.createElement('button');
+    btn.textContent = '⋯';
+    btn.title = 'project actions';
+    const menu = document.createElement('menu');
+    const renameItem = document.createElement('button');
+    renameItem.textContent = 'Rename';
+    const dupItem = document.createElement('button');
+    dupItem.textContent = 'Duplicate';
+    const delItem = document.createElement('button');
+    delItem.textContent = 'Delete';
+    delItem.style.color = 'var(--acc)';
+    menu.appendChild(renameItem);
+    menu.appendChild(dupItem);
+    menu.appendChild(delItem);
+    menuWrap.appendChild(btn);
+    menuWrap.appendChild(menu);
+    row.appendChild(nameSpan);
+    row.appendChild(modSpan);
+    row.appendChild(actSpan);
+    row.appendChild(menuWrap);
+    el.appendChild(row);
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const m = row.querySelector('menu');
+      const open = m.classList.contains('show');
+      el.querySelectorAll('menu').forEach(mm => mm.classList.remove('show'));
+      if (!open) m.classList.add('show');
+    });
+    row.addEventListener('click', () => {
+      if (p.id === PL.currentId) {
+        closeLibrary();
+        return;
+      }
+      switchToProject(p.id);
+    });
+    renameItem.addEventListener('click', e => {
+      e.stopPropagation();
+      m.classList.remove('show');
+      const cur = p.name || '';
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = cur;
+      inp.maxLength = 32;
+      inp.style.fontFamily = 'inherit';
+      inp.style.fontSize = '11px';
+      inp.style.border = '2px solid var(--ink)';
+      inp.style.padding = '4px 6px';
+      inp.style.width = '100%';
+      inp.style.background = '#fff';
+      menu.innerHTML = '';
+      menu.appendChild(inp);
+      const ok = document.createElement('button');
+      ok.textContent = 'SAVE';
+      const canc = document.createElement('button');
+      canc.textContent = 'CANCEL';
+      menu.appendChild(ok);
+      menu.appendChild(canc);
+      inp.focus();
+      inp.select();
+      const commit = () => {
+        const ok2 = renameCurrent(inp.value);
+        renderLibrary();
+        if (!ok2) toast('rename failed', true);
+      };
+      ok.addEventListener('click', e2 => { e2.stopPropagation(); commit(); });
+      canc.addEventListener('click', e2 => { e2.stopPropagation(); renderLibrary(); });
+      inp.addEventListener('keydown', e2 => {
+        if (e2.key === 'Enter') { e2.stopPropagation(); commit(); }
+        else if (e2.key === 'Escape') { e2.stopPropagation(); renderLibrary(); }
+      });
+      if (menu.contains(document.activeElement)) {
+        // already focused in current context; keep focus in input after render
+      }
+    });
+    dupItem.addEventListener('click', e => {
+      e.stopPropagation();
+      m.classList.remove('show');
+      duplicateProject(p.id);
+    });
+    delItem.addEventListener('click', e => {
+      e.stopPropagation();
+      m.classList.remove('show');
+      deleteProject(p.id);
+    });
+  }
+}
+function updateCurrentLabel(){
+  const lbl = $('plCurrentLbl'), nm = $('plCurrentName');
+  if (!lbl || !nm) return;
+  if (PL.currentId == null) {
+    lbl.style.display = 'none';
+    nm.style.display = 'none';
+    nm.textContent = '';
+    return;
+  }
+  const p = PL.list.find(x => x.id === PL.currentId);
+  lbl.style.display = '';
+  nm.style.display = '';
+  nm.textContent = p ? p.name : nowLabel();
+}
+function openLibrary(){
+  const rail = $('projRail');
+  if (!rail) return;
+  rail.hidden = false;
+  if (PL.currentId == null) {
+    // first open: pick existing or create one
+    const lib = loadLibrary();
+    PL.list = lib;
+    if (lib.length > 0) {
+      switchToProject(lib[0].id, false);
+    } else {
+      newProject(nowLabel(), false);
+    }
+  }
+  renderLibrary();
+  updateCurrentLabel();
+}
+function closeLibrary(){
+  const rail = $('projRail');
+  if (!rail) return;
+  rail.hidden = true;
+  rail.querySelectorAll('menu').forEach(mm => mm.classList.remove('show'));
+}
+function newProject(name, switchNow){
+  const id = uid();
+  const lib = loadLibrary();
+  const p = {
+    id: id, name: sanitizeName(name), updated: Date.now(),
+    bpm: 150, steps: 32, gate: 0.85, duty: 0.5, pin: 4, loop: true,
+    pattern: [],
+    activeNotes: []
+  };
+  lib.unshift(p);
+  writeLibrary(lib);
+  PL.list = lib;
+  openProjectById(id, true);
+}
+function duplicateProject(id){
+  const src = ((loadLibrary().find(p => p.id === id)));
+  if (!src) { toast('project not found', true); return; }
+  const id2 = uid();
+  const lib = loadLibrary();
+  const dup = Object.assign({}, src, {
+    id: id2,
+    name: src.name ? (src.name + ' (copy)') : nowLabel(),
+    updated: Date.now(),
+    pattern: Array.isArray(src.pattern) ? src.pattern.slice() : [],
+    activeNotes: Array.isArray(src.activeNotes) ? src.activeNotes.map(n => Object.assign({}, n, { id: undefined })) : []
+  });
+  // reassign note ids to avoid collisions with live state
+  let nid = 1;
+  for (const n of (dup.activeNotes || [])) n.id = nid++;
+  lib.unshift(dup);
+  writeLibrary(lib);
+  PL.list = lib;
+  openProjectById(id2, true);
+  toast('duplicated');
+}
+function deleteProject(id){
+  if (id == null) return;
+  if (!confirm('Delete &ldquo;' + ((PL.list.find(p => p.id === id) || {}).name || 'this project') + '&rdquo;?')) return;
+  let cur = PL.currentId;
+  const lib = loadLibrary().filter(p => p.id !== id);
+  writeLibrary(lib);
+  PL.list = lib;
+  if (PL.currentId === id) {
+    cur = (lib.length > 0) ? lib[0].id : null;
+    openProjectById(cur, cur == null ? false : true);
+  }
+  renderLibrary();
+  updateCurrentLabel();
+  if (cur == null) { stop(); toast('no projects left'); }
+}
+function openProjectById(id, switchNow){
+  if (id == null) {
+    stop(true);
+    PL.currentId = null;
+    PL.currentName = '';
+    updateCurrentLabel();
+    markDirty();
+    renderLibrary();
+    return;
+  }
+  const lib = loadLibrary();
+  const p = lib.find(x => x.id === id);
+  if (!p) { toast('project not found', true); return; }
+  PL.currentId = p.id;
+  PL.currentName = p.name || '';
+  applyState({
+    bpm: p.bpm, steps: p.steps, gate: p.gate, duty: p.duty, pin: p.pin, loop: (p.loop != null ? !!p.loop : true),
+    pattern: Array.isArray(p.pattern) ? p.pattern : null,
+    activeNotes: Array.isArray(p.activeNotes) ? p.activeNotes : null,
+    silent: false
+  });
+  cursorStep = Math.min(cursorStep, Math.max(0, S.steps - 1));
+  selectedNote = null;
+  updateNotePanel();
+  renderNoteList();
+  stop(true);
+  updateCurrentLabel();
+  renderLibrary();
+  refreshAudio();
+}
+function switchToProject(id){
+  if (id == null) {
+    if (PL.currentId != null) {
+      if (!confirm('Switch away without saving &ldquo;' + ((PL.list.find(p => p.id === PL.currentId) || {}).name || 'current') + '&rdquo;?')) return;
+    }
+    openProjectById(id, true);
+    return;
+  }
+  if (id === PL.currentId) { closeLibrary(); return; }
+  openProjectById(id, true);
+}
+function importProjectFromFile(file, nameHint){
+  const r = new FileReader();
+  r.onload = () => {
+    const txt = String(r.result || '');
+    if (!txt.trim()) { toast('import file empty', true); return; }
+    let proj = null;
+    try {
+      if (txt.trim()[0] === '{' || /\.json$/i.test(file.name || '')) {
+        let o = null;
+        try { o = JSON.parse(txt); } catch (jsonErr) { throw new Error('invalid json'); }
+        if (!o || typeof o !== 'object' || (!Array.isArray(o.pattern) && !Array.isArray(o.activeNotes) && o.format !== 'beep1')) throw new Error('not a beep1 project');
+        proj = {
+          bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, pin: +o.pin, loop: !!o.loop,
+          pattern: Array.isArray(o.pattern) ? o.pattern : null,
+          activeNotes: Array.isArray(o.activeNotes) ? o.activeNotes : null,
+          name: sanitizeName(o.name || nameHint || file.name.replace(/\.[^.]+$/, ''))
+        };
+      } else {
+        // .ino import -> parse into a project (note table or legacy SONG[])
+        const parsed = parseIno(txt);
+        proj = {
+          bpm: parsed.bpm,
+          steps: parsed.steps,
+          gate: parsed.gate,
+          duty: parsed.duty,
+          pin: parsed.pin,
+          loop: true,
+          pattern: parsed.pattern || null,
+          activeNotes: parsed.activeNotes || null,
+          name: sanitizeName(nameHint || file.name.replace(/\.[^.]+$/, ''))
+        };
+      }
+    } catch (err) {
+      toast('import failed — ' + (err && err.message ? err.message : 'bad file'), true);
+      return;
+    }
+    if (!proj) return;
+    // create a new project in the library
+    newProject(proj.name, false);
+    // now open that new project and apply imported contents
+    const lib = loadLibrary();
+    const created = lib[0];
+    if (!created) return;
+    openProjectById(created.id, true);
+    applyState({
+      bpm: proj.bpm, steps: proj.steps, gate: proj.gate, duty: proj.duty, pin: proj.pin, loop: proj.loop,
+      pattern: proj.pattern,
+      activeNotes: proj.activeNotes,
+      silent: false
+    });
+    cursorStep = 0;
+    selectedNote = null;
+    updateNotePanel();
+    renderNoteList();
+    stop(true);
+    updateCurrentLabel();
+    renderLibrary();
+    refreshAudio();
+    markDirty();          // persist the freshly imported project
+    toast('imported as new project');
+  };
+  r.onerror = () => toast('import failed', true);
+  r.readAsText(file);
+}
+function exportCurrentProject(){
+  const p = snapProject();
+  if (p.id == null) { toast('no project to export', true); return; }
+  const out = {
+    format: 'beep1', version: 4,
+    name: p.name,
+    bpm: p.bpm, steps: p.steps, gate: p.gate, duty: p.duty, pin: p.pin, loop: p.loop,
+    pattern: Array.isArray(p.pattern) ? p.pattern : [],
+    activeNotes: Array.isArray(p.activeNotes) ? p.activeNotes : undefined,
+    exported: Date.now()
+  };
+  saveBlob(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), (p.name || 'beep1_project').replace(/[^A-Za-z0-9 _-]/g, '_') + '.json');
+  toast('project exported');
+}
+function openImportPickerAsNew(){
+  const inp = $('plImportFile');
+  if (!inp) return;
+  inp.value = '';
+  inp.accept = '.json,.b1p,.ino,.txt';
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    inp.value = '';
+    if (!f) return;
+    importProjectFromFile(f);
+  };
+  inp.click();
+}
 
 /* ============ DOM ============ */
 const $ = id => document.getElementById(id);
@@ -268,6 +776,7 @@ const statusEl = $('status'), posLcd = $('posLcd').firstElementChild, lenLcd = $
 /* ============ HELPERS ============ */
 const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
 const noteName = m => NM[m % 12] + (Math.floor(m / 12) - 1);
+const noteFreq = n => (n && n.freq > 0) ? n.freq : midiFreq(n.midi);
 const stepSec  = () => 60 / S.bpm / 4;
 const clampM   = m => Math.max(LOW, Math.min(HIGH, m));
 const clamp    = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -281,39 +790,20 @@ function toast(msg, err){
   t._h = setTimeout(() => t.className = 'toast', 1900);
 }
 
-/* ============ NOTE HELPERS (ACTIVE) ============ */
-function noteForStep(s){
-  let found = null;
-  for (const n of activeNotes){
-    if (s >= n.step && s < n.step + n.len){
-      if (!found || n.step >= found.step) found = n;
-    }
-  }
-  return found;
-}
+/* ============ NOTE HELPERS ============ */
 function patToActiveNotes(p){
   const notes = []; let i = 0;
   while (i < S.steps){
     if (p[i] >= 0){
+      const m = clampM(p[i]);
       let j = i;
-      while (j < S.steps && p[j] >= 0) j++;
-      notes.push({ id: nextNoteId++, step: i, len: Math.max(1, j - i), midi: clampM(p[i]), vol: 1 });
+      // merge only runs of the SAME pitch into one held note
+      while (j < S.steps && p[j] >= 0 && clampM(p[j]) === m) j++;
+      notes.push({ id: nextNoteId++, step: i, len: Math.max(1, j - i), midi: m, vol: 1, freq: 0, color: nextPaletteColor() });
       i = j;
     } else i++;
   }
   return notes;
-}
-function activeNotesToPat(){
-  for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
-  for (const n of activeNotes){
-    for (let k = 0; k < n.len; k++){
-      const s = n.step + k;
-      if (s >= 0 && s < MAXSTEPS) pat[s] = clampM(n.midi);
-    }
-  }
-}
-function stepHasActive(s){
-  return activeNotes.some(n => s >= n.step && s < n.step + n.len);
 }
 
 /* ============ RENDER AUDIO ============ */
@@ -323,61 +813,48 @@ function renderAudio(sampleRate, vol){
   const total = ss * S.steps;
   const len  = Math.max(8, Math.ceil(total * sampleRate));
   const out  = new Float32Array(len);
-  const gateOn = ss * S.gate;
 
-  if (S.mode === 'passive'){
-    let ph = 0, lastStep = -1;
+  // note-list rendering: held notes (len) + chords arpeggiated like the firmware does
+  {
+    const ARP = ARP_SEC;   // arpeggio swap rate (s) — matches ARP_MS in the exported .ino
+    let ph = 0, curId = -1;
     for (let i = 0; i < len; i++){
       const t = i / sampleRate;
-      let s = Math.floor(t / ss); if (s >= S.steps) s = S.steps - 1;
-      const m = pat[s];
+      // notes sounding at t (gate applies to the whole note, not per step)
+      let cnt = 0;
+      const gEnd = S.gate;
+      for (const nn of activeNotes){
+        const start = nn.step * ss;
+        if (t >= start && t < start + nn.len * ss * gEnd) cnt++;
+      }
+      let n = null;
+      if (cnt){
+        const k = cnt > 1 ? Math.floor(t / ARP) % cnt : 0;
+        let j = 0;
+        for (const nn of activeNotes){
+          const start = nn.step * ss;
+          if (t >= start && t < start + nn.len * ss * gEnd){
+            if (j === k){ n = nn; break; }
+            j++;
+          }
+        }
+      }
       let v = 0;
-      if (m >= 0 && (t - s * ss) < gateOn){
-        if (s !== lastStep) ph = 0;
-        const f = midiFreq(m);
+      if (n){
+        if (n.id !== curId){ ph = 0; curId = n.id; }
+        const f = noteFreq(n);
         ph += f / sampleRate;
         if (ph >= 1) ph -= Math.floor(ph);
         v = (ph < S.duty) ? 1 : -1;
+        out[i] = v * 0.45 * vol * (n.vol == null ? 1 : n.vol);
+      } else {
+        curId = -1;
+        out[i] = 0;
       }
-      lastStep = s;
-      out[i] = v * 0.45 * vol;
     }
     return out;
   }
 
-  // active (time-based, supports fractional note lengths)
-  let ph = 0, curId = -1;
-  for (let i = 0; i < len; i++){
-    const t = i / sampleRate;
-    // find covering note (latest start wins)
-    let note = null;
-    for (const n of activeNotes){
-      const start = n.step * ss;
-      const end = start + n.len * ss;
-      if (t >= start && t < end){
-        if (!note || n.step >= note.step) note = n;
-      }
-    }
-    let v = 0;
-    if (note){
-      const noteStart = note.step * ss;
-      const dur = note.len * ss * S.gate;
-      if (t - noteStart < dur){
-        if (note.id !== curId){ ph = 0; curId = note.id; }
-        const f = ACTIVE_FREQ;
-        ph += f / sampleRate;
-        if (ph >= 1) ph -= Math.floor(ph);
-        v = (ph < S.duty) ? 1 : -1;
-        out[i] = v * 0.45 * vol * (note.vol == null ? 1 : note.vol);
-      } else {
-        out[i] = 0;
-      }
-    } else {
-      curId = -1;
-      out[i] = 0;
-    }
-  }
-  return out;
 }
 
 /* ============ AUDIO PLAYBACK ============ */
@@ -395,13 +872,13 @@ function ensureCtx(){
   return ac;
 }
 
-function blip(midi, dur){
+function blip(note, dur){
   dur = dur || .11;
   try{
     ensureCtx();
     const sr = ac.sampleRate, n = Math.max(8, Math.floor(dur * sr));
     const b = ac.createBuffer(1, n, sr), d = b.getChannelData(0);
-    const f = S.mode === 'active' ? ACTIVE_FREQ : midiFreq(midi); let ph = 0;
+    const f = noteFreq(note); let ph = 0;
     for (let i = 0; i < n; i++){
       ph += f / sr; if (ph >= 1) ph -= 1;
       const atk = Math.min(1, i / (sr * .004));
@@ -532,44 +1009,42 @@ function drawGrid(){
     g.fillRect(s * cellW, RULERH, 1, H - RULERH);
   }
 
-  /* notes */
-  if (S.mode === 'active'){
-    for (const n of activeNotes){
-      const r = HIGH - n.midi;
-      if (r < 0 || r >= ROWS) continue;
-      const x = n.step * cellW;
-      const y = RULERH + r * ROWH;
-      const w = n.len * cellW;
-      const h = ROWH - 2;
-      const vol = (n.vol == null ? 1 : n.vol);
-      g.globalAlpha = 0.3 + 0.7 * vol;
-      g.fillStyle = (selectedNote === n.id) ? '#e23d28' : '#111';
-      g.fillRect(x + 1, y + 1, Math.max(2, w - 2), h);
-      g.globalAlpha = 1;
-      g.fillStyle = 'rgba(255,255,255,.35)';
-      g.fillRect(x + 2, y + 2, Math.max(1, w - 8), 1);
-      // volume strip on right edge
-      const vh = Math.round(h * vol);
-      g.fillStyle = 'rgba(255,255,255,.55)';
-      g.fillRect(x + w - 4, y + 1 + (h - vh), 2, vh);
-      if (selectedNote === n.id){
-        g.strokeStyle = '#e23d28'; g.lineWidth = 1.5;
-        g.strokeRect(x + 0.5, y + 0.5, w - 1, h + 1);
-        // resize handles
-        g.fillStyle = '#e23d28';
-        g.fillRect(x, y + 2, 3, h - 4);
-        g.fillRect(x + w - 3, y + 2, 3, h - 4);
+  /* notes (same model in both modes: bars with length, chords stack on one step) */
+  const hovNote = (hover && !playing) ? noteAtCell(hover.s, hover.m) : null;
+  for (const n of activeNotes){
+    const r = HIGH - n.midi;
+    if (r < 0 || r >= ROWS) continue;
+    const x = n.step * cellW;
+    const y = RULERH + r * ROWH;
+    const w = n.len * cellW;
+    const h = ROWH - 2;
+    const vol = (n.vol == null ? 1 : n.vol);
+    const isSel = (selectedNote === n.id);
+    const isHov = (hovNote && hovNote.id === n.id);
+    g.globalAlpha = 0.35 + 0.65 * vol;
+    g.fillStyle = noteColor(n.color);
+    g.fillRect(x + 1, y + 1, Math.max(2, w - 2), h);
+    g.globalAlpha = 1;
+    // thin edge so neighbouring notes stay readable
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1;
+    g.strokeRect(x + 1.5, y + 1.5, Math.max(1, w - 3), h - 1);
+    g.fillStyle = 'rgba(255,255,255,.35)';
+    g.fillRect(x + 2, y + 2, Math.max(1, w - 8), 1);
+    // volume strip on right edge
+    const vh = Math.round(h * vol);
+    g.fillStyle = 'rgba(255,255,255,.55)';
+    g.fillRect(x + w - 4, y + 1 + (h - vh), 2, vh);
+    if (isSel || isHov){
+      g.strokeStyle = isSel ? '#111' : '#e23d28'; g.lineWidth = isSel ? 2 : 1;
+      g.strokeRect(x + 0.5, y + 0.5, w - 1, h + 1);
+      // resize grips on both ends (notes are one row tall, so these read as corners)
+      g.fillStyle = '#e23d28';
+      g.fillRect(x, y + 2, 3, h - 4);
+      g.fillRect(x + w - 3, y + 2, 3, h - 4);
+      // corner arrow cue on the right grip
+      if (w >= cellW * 0.9){
+        g.fillRect(x + w - 5, y + h - 4, 2, 2);
       }
-    }
-  } else {
-    for (let s = 0; s < S.steps; s++){
-      const m = pat[s];
-      if (m < LOW || m > HIGH) continue;
-      const r = HIGH - m, x = s * cellW, y = RULERH + r * ROWH;
-      g.fillStyle = '#111';
-      g.fillRect(x + 1, y + 1, cellW - 2, ROWH - 2);
-      g.fillStyle = '#fff';
-      g.fillRect(x + 2, y + 2, Math.max(1, cellW - 8), 1);
     }
   }
 
@@ -604,12 +1079,17 @@ function drawGrid(){
     g.fillStyle = cur ? '#fff' : '#111';
     g.fillRect(x, RULERH - 9, 1, 7);
   }
-  /* hover */
-  if (hover && !playing && S.mode === 'passive'){
+  /* hover: outline the note under the cursor, or the empty cell while painting */
+  if (hover && !playing){
     const r = HIGH - hover.m;
     if (r >= 0 && r < ROWS){
       g.strokeStyle = '#e23d28'; g.lineWidth = 1;
-      g.strokeRect(hover.s * cellW + 1.5, RULERH + r * ROWH + 1.5, cellW - 3, ROWH - 3);
+      if (hovNote){
+        g.strokeRect(hovNote.step * cellW + 1.5, RULERH + r * ROWH + 1.5,
+                     Math.max(cellW - 3, hovNote.len * cellW - 3), ROWH - 3);
+      } else {
+        g.strokeRect(hover.s * cellW + 1.5, RULERH + r * ROWH + 1.5, cellW - 3, ROWH - 3);
+      }
     }
   }
   g.strokeStyle = '#111'; g.lineWidth = 2;
@@ -618,30 +1098,22 @@ function drawGrid(){
 
 /* ============ STATUS ============ */
 function updateStatus(){
-  let count = 0;
-  if (S.mode === 'active'){
-    count = activeNotes.length;
-  } else {
-    for (let i = 0; i < S.steps; i++) if (pat[i] >= 0) count++;
-  }
+  const count = activeNotes.length;
   const len = (S.steps * stepSec());
   lenLcd.textContent = len.toFixed(2) + 's';
   $('stepsOut').textContent = stepsLabel();
   let left = 'NOTES <b>' + count + '</b>' +
              ' &nbsp;&middot;&nbsp; <b>' + len.toFixed(2) + 's</b>' +
-             ' &nbsp;&middot;&nbsp; ' + (S.mode === 'active'
-               ? 'ACTIVE <b>' + (ACTIVE_FREQ / 1000) + ' kHz</b> FIXED'
-               : 'DUTY <b>' + Math.round(S.duty * 100) + '%</b>');
+             ' &nbsp;&middot;&nbsp; DUTY <b>' + Math.round(S.duty * 100) + '%</b>';
   if (hover){
-    if (S.mode === 'active'){
-      const n = noteForStep(hover.s);
-      left = 'STEP <b>' + pad2(hover.s + 1) + '</b>' +
-             (n ? ' &nbsp;&middot;&nbsp; <b>BEEP</b> (' + noteName(n.midi) + ', ' + n.len + ' steps, ' + Math.round((n.vol||1)*100) + '%)' : ' &nbsp;&middot;&nbsp; REST');
-    } else {
-      left = '<b>' + noteName(hover.m) + '</b> &nbsp;' + midiFreq(hover.m).toFixed(1) + ' Hz' +
-             ' &nbsp;&middot;&nbsp; STEP <b>' + pad2(hover.s + 1) + '</b>' +
-             (pat[hover.s] >= 0 ? ' &nbsp;&middot;&nbsp; HELD: ' + noteName(pat[hover.s]) : '');
-    }
+    const hn = noteAtCell(hover.s, hover.m);
+    const hf = hn ? noteFreq(hn) : midiFreq(hover.m);
+    const voices = activeNotes.filter(n => hover.s >= n.step && hover.s < n.step + n.len).length;
+    left = '<b>' + noteName(hn ? hn.midi : hover.m) + '</b> &nbsp;' + hf.toFixed(1) + ' Hz' +
+           (hn && hn.freq > 0 ? ' <b>~</b>' : '') +
+           ' &nbsp;&middot;&nbsp; STEP <b>' + pad2(hover.s + 1) + '</b>' +
+           (hn ? ' &nbsp;&middot;&nbsp; <b>' + hn.len + ' st</b> @ ' + Math.round((hn.vol == null ? 1 : hn.vol) * 100) + '%' : ' &nbsp;&middot;&nbsp; REST') +
+           (voices > 1 ? ' &nbsp;&middot;&nbsp; <b>CHORD ' + voices + '</b>' : '');
   }
   statusEl.innerHTML = left;
 }
@@ -665,23 +1137,54 @@ function rulerFrom(ev){
   const s = Math.floor(px / cellW);
   return (s >= 0 && s < S.steps) ? s : null;
 }
-function noteAt(px, py){
-  if (S.mode !== 'active' || py < RULERH) return null;
-  const row = Math.floor((py - RULERH) / ROWH);
-  const midi = clampM(HIGH - row);
+/* note occupying the given step/pitch cell (topmost = last added wins) */
+function noteAtCell(s, m){
   for (let i = activeNotes.length - 1; i >= 0; i--){
     const n = activeNotes[i];
-    if (n.midi !== midi) continue;
-    const left = n.step * cellW;
-    const right = left + n.len * cellW;
-    if (px >= left && px < right){
-      let handle = 'body';
-      if (px >= right - 6) handle = 'resizeR';
-      else if (px <= left + 6) handle = 'resizeL';
-      return { note: n, handle: handle };
-    }
+    if (n.midi !== m) continue;
+    if (s >= n.step && s < n.step + n.len) return n;
   }
   return null;
+}
+/* grip zone at each end scales down for short notes so a body always remains */
+function gripW(n){
+  const w = n.len * cellW;
+  return Math.max(2, Math.min(6, Math.floor(w / 3)));
+}
+/* every note of the given pitch covering the cell, topmost first */
+function notesAtCell(s, m){
+  const out = [];
+  for (let i = activeNotes.length - 1; i >= 0; i--){
+    const n = activeNotes[i];
+    if (n.midi === m && s >= n.step && s < n.step + n.len) out.push(n);
+  }
+  return out;
+}
+function noteAt(px, py){
+  if (py < RULERH) return null;
+  const row = Math.floor((py - RULERH) / ROWH);
+  const midi = clampM(HIGH - row);
+  const s = Math.floor(px / cellW);
+  const stack = notesAtCell(s, midi);
+  if (!stack.length) return null;
+  let n = stack[0];
+  const gw = gripW(n);
+  const l0 = n.step * cellW, r0 = l0 + n.len * cellW;
+  let onEnd = (px >= r0 - gw) || (px <= l0 + gw);
+  // clicking the body of stacked same-pitch notes cycles through them
+  if (!onEnd && stack.length > 1){
+    const idx = stack.findIndex(x => x.id === selectedNote);
+    if (idx >= 0) n = stack[(idx + 1) % stack.length];
+  }
+  const left = n.step * cellW, right = left + n.len * cellW;
+  let handle = 'body';
+  if (px >= right - gw) handle = 'resizeR';
+  else if (px <= left + gw) handle = 'resizeL';
+  return { note: n, handle: handle };
+}
+/* can a new note be painted at this cell without colliding? */
+function paintFree(s, m){
+  return !activeNotes.some(n => n.midi === m && s >= n.step && s < n.step + n.len);
 }
 
 /* ============ INPUT ============ */
@@ -698,89 +1201,53 @@ gc.addEventListener('mousedown', e => {
   const c = cellFrom(e);
   if (!c) return;
 
-  if (S.mode === 'active'){
-    const hit = noteAt(px, py);
-    if (e.button === 2){
-      if (hit){
-        activeNotes = activeNotes.filter(n => n.id !== hit.note.id);
-        if (selectedNote === hit.note.id) selectedNote = null;
-        updateNotePanel(); updateStatus(); drawGrid(); edit();
-      }
-      return;
-    }
+  const hit = noteAt(px, py);
+  if (e.button === 2){
+    // right-click erases the note under the cursor (both modes)
     if (hit){
-      selectedNote = hit.note.id;
-      const n = hit.note;
-      dragState = { type: hit.handle, noteId: n.id, startStep: n.step, startLen: n.len,
-        startMidi: n.midi, startVol: (n.vol == null ? 1 : n.vol), origX: px, origY: py };
-    } else {
-      const midi = c.m;
-      const note = { id: nextNoteId++, step: c.s, len: 1, midi: midi, vol: 1 };
-      activeNotes.push(note);
-      selectedNote = note.id;
-      dragState = { type: 'body', noteId: note.id, startStep: note.step, startLen: note.len,
-        startMidi: note.midi, startVol: 1, origX: px, origY: py };
+      activeNotes = activeNotes.filter(n => n.id !== hit.note.id);
+      if (selectedNote === hit.note.id) selectedNote = null;
+      updateNotePanel(); updateStatus(); drawGrid(); edit();
     }
+    return;
+  }
+  if (hit){
+    selectedNote = hit.note.id;
+    const n = hit.note;
+    dragState = { type: hit.handle, noteId: n.id, startStep: n.step, startLen: n.len,
+      startMidi: n.midi, startVol: (n.vol == null ? 1 : n.vol), origX: px, origY: py };
     updateNotePanel(); updateStatus(); drawGrid();
     return;
   }
-
-  // passive mode (original painting)
-  const erase = (e.button === 2) || (pat[c.s] === c.m);
-  dragState = { erase: erase, painting: true };
-  applyPaint(c, erase);
+  // empty cell: paint a stroke of notes (drag to lay a run)
+  const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1, freq: 0, color: nextPaletteColor() };
+  activeNotes.push(note);
+  selectedNote = note.id;
+  if (!playing) blip(note, .09);
+  dragState = { type: 'paint' };
+  updateNotePanel(); updateStatus(); drawGrid();
 });
 
 window.addEventListener('mousemove', e => {
   const c = cellFrom(e);
-  if (S.mode === 'active'){
-    const { px, py } = canvasCoords(e);
-    if (dragState){
-      const n = activeNotes.find(x => x.id === dragState.noteId);
-      if (n){
-        const dxSteps = (px - dragState.origX) / cellW;
-        const dy = Math.round((py - dragState.origY) / ROWH);
-        if (e.shiftKey && dragState.type === 'body'){
-          n.vol = clamp(dragState.startVol + (dragState.origY - py) / 80, 0, 1);
-        } else if (dragState.type === 'body'){
-          const newStep = Math.round(dragState.startStep + (px - dragState.origX) / cellW);
-          n.step = clamp(newStep, 0, Math.max(0, S.steps - Math.ceil(n.len)));
-          n.midi = clampM(dragState.startMidi - dy);
-        } else if (dragState.type === 'resizeR'){
-          const minLen = 0.1;
-          n.len = clamp(dragState.startLen + dxSteps, minLen, S.steps - n.step);
-        } else if (dragState.type === 'resizeL'){
-          // smooth resize from left: keep right edge fixed
-          const rightEdge = dragState.startStep + dragState.startLen;
-          const newLeft = clamp(dragState.startStep + dxSteps, 0, rightEdge - 0.1);
-          n.step = newLeft;
-          n.len = rightEdge - newLeft;
-          if (n.len < 0.1){ n.len = 0.1; n.step = rightEdge - 0.1; }
-        }
-        updateNotePanel(); updateStatus(); drawGrid();
-      }
+  const { px, py } = canvasCoords(e);
+  if (dragState){
+    if (dragState.type === 'paint'){
+      if (c) paintAt(c);
+      else if (hover){ hover = null; updateStatus(); drawGrid(); }
       return;
     }
-    if (!c){ if (hover){ hover = null; updateStatus(); drawGrid(); } return; }
-    if (!hover || hover.s !== c.s || hover.m !== c.m){ hover = c; updateStatus(); drawGrid(); }
+    applyDrag(px, py, e.shiftKey);
     return;
   }
-
-  // passive
-  if (!c){ if (hover){ hover = null; updateStatus(); drawGrid(); } if (!dragState || !dragState.painting) return; }
-  if (c && (!hover || hover.s !== c.s || hover.m !== c.m)){ hover = c; updateStatus(); drawGrid(); }
-  if (dragState && dragState.painting && c) applyPaint(c, dragState.erase);
+  if (!c){ if (hover){ hover = null; updateStatus(); drawGrid(); } return; }
+  if (!hover || hover.s !== c.s || hover.m !== c.m){ hover = c; updateStatus(); drawGrid(); }
 });
 
 window.addEventListener('mouseup', () => {
   if (dragState){
-    if (S.mode === 'active'){
-      dragState = null;
-      edit();
-      if (playing) liveRestart();
-    } else {
-      dragState = null;
-    }
+    dragState = null;
+    edit();
   }
 });
 gc.addEventListener('mouseleave', () => { hover = null; updateStatus(); drawGrid(); });
@@ -788,73 +1255,72 @@ gc.addEventListener('mouseleave', () => { hover = null; updateStatus(); drawGrid
 gc.addEventListener('touchstart', e => {
   e.preventDefault();
   const c = cellFrom(e); if (!c) return;
-  if (S.mode === 'active'){
-    const { px, py } = canvasCoords(e);
-    const hit = noteAt(px, py);
-    if (hit){
-      selectedNote = hit.note.id;
-      dragState = { type: hit.handle, noteId: hit.note.id, startStep: hit.note.step, startLen: hit.note.len,
-        startMidi: hit.note.midi, startVol: (hit.note.vol == null ? 1 : hit.note.vol), origX: px, origY: py };
-    } else {
-      const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1 };
-      activeNotes.push(note);
-      selectedNote = note.id;
-      dragState = { type: 'body', noteId: note.id, startStep: note.step, startLen: note.len,
-        startMidi: note.midi, startVol: 1, origX: px, origY: py };
-    }
-    updateNotePanel(); updateStatus(); drawGrid();
-    return;
+  const { px, py } = canvasCoords(e);
+  const hit = noteAt(px, py);
+  if (hit){
+    selectedNote = hit.note.id;
+    dragState = { type: hit.handle, noteId: hit.note.id, startStep: hit.note.step, startLen: hit.note.len,
+      startMidi: hit.note.midi, startVol: (hit.note.vol == null ? 1 : hit.note.vol), origX: px, origY: py };
+  } else {
+    const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1, freq: 0, color: nextPaletteColor() };
+    activeNotes.push(note);
+    selectedNote = note.id;
+    if (!playing) blip(note, .09);
+    dragState = { type: 'paint' };
   }
-  const erase = pat[c.s] === c.m;
-  dragState = { erase: erase, painting: true };
-  applyPaint(c, erase);
+  updateNotePanel(); updateStatus(); drawGrid();
 }, { passive:false });
 gc.addEventListener('touchmove', e => {
   e.preventDefault();
   const c = cellFrom(e); if (!c) return;
-  if (S.mode === 'active'){
-    if (!dragState) return;
-    const { px, py } = canvasCoords(e);
-    const n = activeNotes.find(x => x.id === dragState.noteId);
-    if (n){
-      const dxSteps = (px - dragState.origX) / cellW;
-      const dy = Math.round((py - dragState.origY) / ROWH);
-      if (dragState.type === 'body'){
-        const newStep = Math.round(dragState.startStep + dxSteps);
-        n.step = clamp(newStep, 0, Math.max(0, S.steps - Math.ceil(n.len)));
-        n.midi = clampM(dragState.startMidi - dy);
-      } else if (dragState.type === 'resizeR'){
-        n.len = clamp(dragState.startLen + dxSteps, 0.1, S.steps - n.step);
-      } else if (dragState.type === 'resizeL'){
-        const rightEdge = dragState.startStep + dragState.startLen;
-        const newLeft = clamp(dragState.startStep + dxSteps, 0, rightEdge - 0.1);
-        n.step = newLeft;
-        n.len = rightEdge - newLeft;
-        if (n.len < 0.1){ n.len = 0.1; n.step = rightEdge - 0.1; }
-      }
-      updateNotePanel(); updateStatus(); drawGrid();
-    }
-    return;
-  }
-  if (dragState && dragState.painting) applyPaint(c, dragState.erase);
+  if (!dragState) return;
+  if (dragState.type === 'paint'){ paintAt(c); return; }
+  const { px, py } = canvasCoords(e);
+  applyDrag(px, py, false);
 }, { passive:false });
 gc.addEventListener('touchend', () => {
-  if (dragState){
-    if (S.mode === 'active'){ dragState = null; edit(); if (playing) liveRestart(); }
-    else dragState = null;
-  }
+  if (dragState){ dragState = null; edit(); }
 });
 
-function applyPaint(c, erase){
-  if (!c) return;
-  if (erase){ if (pat[c.s] < 0) return; pat[c.s] = -1; }
-  else {
-    if (pat[c.s] === c.m) return;
-    pat[c.s] = c.m;
-    if (!playing) blip(c.m, .09);
+/* ============ SHARED DRAG / PAINT ============ */
+function applyDrag(px, py, shiftKey){
+  if (!dragState || dragState.type === 'paint') return false;
+  const n = activeNotes.find(x => x.id === dragState.noteId);
+  if (!n) return false;
+  const dxSteps = (px - dragState.origX) / cellW;
+  const dy = Math.round((py - dragState.origY) / ROWH);
+  if (shiftKey && dragState.type === 'body'){
+    n.vol = clamp(dragState.startVol + (dragState.origY - py) / 80, 0, 1);
+  } else if (dragState.type === 'body'){
+    const newStep = Math.round(dragState.startStep + dxSteps);
+    n.step = clamp(newStep, 0, Math.max(0, S.steps - Math.ceil(n.len)));
+    n.midi = clampM(dragState.startMidi - dy);
+  } else if (dragState.type === 'resizeR'){
+    const right = Math.round(n.step + Math.max(1, dragState.startLen + dxSteps));
+    n.len = clamp(right - n.step, 1, S.steps - n.step);
+  } else if (dragState.type === 'resizeL'){
+    // resize from the left corner: keep right edge fixed (snapped to whole steps)
+    const rightEdge = Math.round(dragState.startStep + dragState.startLen);
+    const newLeft = clamp(Math.round(dragState.startStep + dxSteps), 0, rightEdge - 1);
+    n.step = newLeft;
+    n.len = rightEdge - newLeft;
   }
-  updateStatus(); drawGrid(); buildCode();
-  if (playing) liveRestart();
+  syncNoteList(); updateStatus(); drawGrid();
+  return true;
+}
+function paintAt(c){
+  if (!c) return;
+  hover = c;
+  if (paintFree(c.s, c.m)){
+    const note = { id: nextNoteId++, step: c.s, len: 1, midi: c.m, vol: 1, freq: 0, color: nextPaletteColor() };
+    activeNotes.push(note);
+    selectedNote = note.id;
+    if (!playing) blip(note, .09);
+    renderNoteList(); updateStatus(); drawGrid(); buildCode();
+    if (playing) liveRestart();
+  } else {
+    updateStatus(); drawGrid();
+  }
 }
 
 /* ============ CONTROLS ============ */
@@ -876,7 +1342,7 @@ function setSteps(n){
   // clamp active notes into range
   for (const nt of activeNotes){
     if (nt.step >= S.steps){ nt.step = Math.max(0, S.steps - nt.len); }
-    if (nt.step + nt.len > S.steps) nt.len = Math.max(0.1, S.steps - nt.step);
+    if (nt.step + nt.len > S.steps) nt.len = Math.max(1, S.steps - nt.step);
   }
   syncStepsUI(); layout(); refreshAudio();
 }
@@ -893,20 +1359,118 @@ bind('vol', () => {
 bind('pin', () => { S.pin = Math.max(1, Math.min(48, +$('pin').value || 4)); buildCode(); });
 $('loopChk').addEventListener('change', () => { S.loop = $('loopChk').checked; reseekRestart(); });
 
-// mode change with data conversion
-$('mode').addEventListener('change', () => {
-  const newMode = $('mode').value;
-  if (newMode === S.mode) return;
-  if (S.mode === 'passive' && newMode === 'active'){
-    activeNotes = patToActiveNotes(pat.slice(0, S.steps));
-    selectedNote = null;
-  } else if (S.mode === 'active' && newMode === 'passive'){
-    activeNotesToPat();
-    selectedNote = null;
+/* ============ NOTE RAIL (side panel) ============ */
+let noteRows = new Map();
+function renderNoteList(){
+  const el = $('noteList');
+  const rail = $('noteRail');
+  if (!el || !rail) return;
+  const cnt = $('noteCount');
+  if (cnt) cnt.textContent = activeNotes.length + (activeNotes.length === 1 ? ' NOTE' : ' NOTES');
+  if (rail.hidden){ noteRows = new Map(); el.innerHTML = ''; return; }
+  noteRows = new Map();
+  el.innerHTML = '';
+  const notes = activeNotes.slice().sort((a, b) => (a.step - b.step) || (a.midi - b.midi));
+  if (!notes.length){
+    const d = document.createElement('div');
+    d.className = 'mono-lbl';
+    d.style.padding = '12px 8px';
+    d.textContent = 'no notes — paint some on the grid';
+    el.appendChild(d);
+    return;
   }
-  S.mode = newMode;
-  updateNotePanel(); refreshAudio();
-});
+  for (const n of notes){
+    const row = document.createElement('div');
+    row.className = 'nrow';
+    const sw = document.createElement('button');
+    sw.className = 'nswatch';
+    sw.title = 'change colour';
+    sw.style.background = noteColor(n.color);
+    const info = document.createElement('div');
+    info.className = 'ninfo';
+    const nm = document.createElement('div');
+    nm.className = 'nname';
+    nm.textContent = noteName(n.midi);
+    const meta = document.createElement('div');
+    meta.className = 'nmeta';
+    const setMeta = () => { meta.textContent = 'step ' + pad2(n.step + 1) + ' · len ' + n.len + ' · ' + Math.round(noteFreq(n)) + ' Hz'; };
+    setMeta();
+    info.appendChild(nm); info.appendChild(meta);
+    const fwrap = document.createElement('div');
+    fwrap.className = 'nfld';
+    const fl = document.createElement('span'); fl.className = 'mono-lbl'; fl.textContent = 'Hz';
+    const fi = document.createElement('input');
+    fi.type = 'number'; fi.className = 'nfreq'; fi.min = '20'; fi.max = '12000'; fi.step = '1';
+    fi.value = Math.round(noteFreq(n));
+    fi.title = 'frequency in Hz';
+    fwrap.appendChild(fl); fwrap.appendChild(fi);
+    const lwrap = document.createElement('div');
+    lwrap.className = 'nfld';
+    const ll = document.createElement('span'); ll.className = 'mono-lbl'; ll.textContent = 'Len';
+    const li = document.createElement('input');
+    li.type = 'number'; li.className = 'nlen'; li.min = '1'; li.step = '1';
+    li.value = n.len; li.title = 'length in steps';
+    lwrap.appendChild(ll); lwrap.appendChild(li);
+    const del = document.createElement('button');
+    del.className = 'ndel'; del.textContent = '\u00d7'; del.title = 'delete note';
+    row.appendChild(sw); row.appendChild(info); row.appendChild(fwrap); row.appendChild(lwrap); row.appendChild(del);
+    el.appendChild(row);
+    noteRows.set(n.id, row);
+
+    row.addEventListener('click', () => {
+      selectedNote = n.id;
+      updateNotePanel(); drawGrid();
+    });
+    sw.addEventListener('click', e => {
+      e.stopPropagation();
+      n.color = (Math.round(n.color) + 1) % PALETTE.length;
+      sw.style.background = noteColor(n.color);
+      drawGrid(); edit();
+    });
+    fi.addEventListener('click', e => e.stopPropagation());
+    fi.addEventListener('input', () => {
+      const v = +fi.value;
+      n.freq = (isFinite(v) && v > 0) ? v : 0;
+      setMeta(); updateStatus(); drawGrid();
+    });
+    fi.addEventListener('change', () => {
+      let f = +fi.value;
+      if (!isFinite(f) || f <= 0){ n.freq = 0; }
+      else { n.freq = f; n.midi = clampM(midiFromFreq(f)); }
+      const nn = activeNotes.find(x => x.id === n.id);
+      updateNotePanel(); drawGrid(); edit();
+      if (nn){ fi.value = Math.round(noteFreq(nn)); }
+    });
+    li.addEventListener('click', e => e.stopPropagation());
+    li.addEventListener('change', () => {
+      const v = clamp(Math.round(+li.value || 1), 1, S.steps - n.step);
+      n.len = v; li.value = v; setMeta(); updateNotePanel(); drawGrid(); edit();
+    });
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      activeNotes = activeNotes.filter(x => x.id !== n.id);
+      if (selectedNote === n.id) selectedNote = null;
+      updateNotePanel(); updateStatus(); drawGrid(); edit();
+    });
+  }
+  syncNoteList();
+}
+/* lightweight refresh while dragging: update values + selection without rebuilding rows */
+function syncNoteList(){
+  for (const [id, row] of noteRows) row.classList.toggle('sel', id === selectedNote);
+  const n = activeNotes.find(x => x.id === selectedNote);
+  if (!n) return;
+  const row = noteRows.get(selectedNote);
+  if (!row) return;
+  const fi = row.querySelector('input.nfreq');
+  if (fi && document.activeElement !== fi) fi.value = Math.round(noteFreq(n));
+  const li = row.querySelector('input.nlen');
+  if (li && document.activeElement !== li) li.value = n.len;
+}
+function openNoteRail(){ $('noteRail').hidden = false; renderNoteList(); layout(); drawGrid(); }
+function closeNoteRail(){ $('noteRail').hidden = true; renderNoteList(); layout(); drawGrid(); }
+$('noteRailBtn').onclick = () => { if ($('noteRail').hidden) openNoteRail(); else closeNoteRail(); };
+$('noteRailClose').onclick = closeNoteRail;
 
 let dirtyT = null;
 function reseekRestart(){
@@ -918,16 +1482,15 @@ function reseekRestart(){
 }
 function liveRestart(){ clearTimeout(dirtyT); dirtyT = setTimeout(reseekRestart, 180); }
 function refreshAudio(){
-  updateStatus(); drawGrid(); buildCode();
+  updateStatus(); drawGrid(); buildCode(); renderNoteList();
   if (playing) liveRestart();
 }
-function edit(){ refreshAudio(); }
+function edit(){ refreshAudio(); markDirty(); }
 
 $('playBtn').onclick = () => { togglePlay(); };
 $('stopBtn').onclick = () => stop();
 $('clearBtn').onclick = () => {
-  if (S.mode === 'active'){ activeNotes = []; selectedNote = null; updateNotePanel(); }
-  else { for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1; }
+  activeNotes = []; selectedNote = null; updateNotePanel();
   edit(); toast('pattern cleared');
 };
 $('rotL').onclick = () => { rotate(1); edit(); };
@@ -938,65 +1501,29 @@ $('demoBtn').onclick = () => { loadDemo(); edit(); toast('demo loaded'); };
 $('randBtn').onclick = () => { randomize(); edit(); toast('random riff'); };
 
 function rotate(d){
-  if (S.mode === 'active'){
-    for (const n of activeNotes) n.step = ((n.step + d) % S.steps + S.steps) % S.steps;
-    return;
+  for (const n of activeNotes){
+    let s = ((n.step + d) % S.steps + S.steps) % S.steps;
+    if (s + n.len > S.steps) s = Math.max(0, S.steps - Math.ceil(n.len));
+    n.step = s;
   }
-  const n = S.steps, cp = pat.slice(0, n);
-  for (let i = 0; i < n; i++) pat[i] = cp[((i + d) % n + n) % n];
 }
 function transpose(d){
-  if (S.mode === 'active'){
-    for (const n of activeNotes) n.midi = clampM(n.midi + d);
-    return;
-  }
-  for (let i = 0; i < MAXSTEPS; i++) if (pat[i] >= 0) pat[i] = clampM(pat[i] + d);
+  for (const n of activeNotes) n.midi = clampM(n.midi + d);
 }
 function loadDemo(){
-  for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
   activeNotes = [];
   S.steps = 32; $('steps').value = '32'; S.bpm = 150; $('bpm').value = 150; $('bpmOut').textContent = '150 BPM';
-  if (S.mode === 'active'){
-    const d = [[0,72],[2,67],[4,75],[6,72],[8,70],[10,67],[12,72],[14,74],
-               [16,75],[18,79],[20,77],[22,75],[24,74],[26,72],[28,67],[30,72]];
-    let i = 0;
-    // merge consecutive into notes of len 1 (beeps)
-    for (const p of d){
-      activeNotes.push({ id: nextNoteId++, step: p[0], len: 1, midi: p[1], vol: 1 });
-    }
-  } else {
-    const d = [[0,72],[2,67],[4,75],[6,72],[8,70],[10,67],[12,72],[14,74],
-               [16,75],[18,79],[20,77],[22,75],[24,74],[26,72],[28,67],[30,72]];
-    d.forEach(p => pat[p[0]] = p[1]);
+  const d = [[0,72],[2,67],[4,75],[6,72],[8,70],[10,67],[12,72],[14,74],
+             [16,75],[18,79],[20,77],[22,75],[24,74],[26,72],[28,67],[30,72]];
+  for (const p of d){
+    activeNotes.push({ id: nextNoteId++, step: p[0], len: 1, midi: p[1], vol: 1, freq: 0, color: nextPaletteColor() });
   }
   cursorStep = 0; syncStepsUI(); layout();
 }
 function randomize(){
-  if (S.mode === 'active'){
-    activeNotes = [];
-    const sc5 = [0, 3, 5, 7, 10];
-    let deg = 0;
-    for (let s = 0; s < S.steps; s++){
-      if (s % 2 === 1 && Math.random() < .72) continue;
-      if (Math.random() < .16) continue;
-      deg += Math.floor(Math.random() * 5) - 2;
-      deg = Math.max(-3, Math.min(sc5.length + 2, deg));
-      const idx = ((deg % sc5.length) + sc5.length) % sc5.length;
-      const oct = Math.floor(deg / sc5.length);
-      const midi = clampM(60 + oct * 12 + sc5[idx]);
-      // random length 1-3
-      const len = 1 + Math.floor(Math.random() * 3);
-      // avoid overlap: if previous note extends, skip
-      const last = activeNotes[activeNotes.length-1];
-      if (last && s < last.step + last.len) continue;
-      if (s + len > S.steps) continue;
-      activeNotes.push({ id: nextNoteId++, step: s, len: len, midi: midi, vol: 0.6 + Math.random() * 0.4 });
-    }
-    return;
-  }
+  activeNotes = [];
   const sc5 = [0, 3, 5, 7, 10];
   let deg = 0;
-  for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
   for (let s = 0; s < S.steps; s++){
     if (s % 2 === 1 && Math.random() < .72) continue;
     if (Math.random() < .16) continue;
@@ -1004,35 +1531,42 @@ function randomize(){
     deg = Math.max(-3, Math.min(sc5.length + 2, deg));
     const idx = ((deg % sc5.length) + sc5.length) % sc5.length;
     const oct = Math.floor(deg / sc5.length);
-    pat[s] = clampM(60 + oct * 12 + sc5[idx]);
+    const midi = clampM(60 + oct * 12 + sc5[idx]);
+    // random length 1-3
+    const len = 1 + Math.floor(Math.random() * 3);
+    // avoid overlap: if previous note extends, skip
+    const last = activeNotes[activeNotes.length-1];
+    if (last && s < last.step + last.len) continue;
+    if (s + len > S.steps) continue;
+    activeNotes.push({ id: nextNoteId++, step: s, len: len, midi: midi, vol: 0.6 + Math.random() * 0.4, freq: 0, color: nextPaletteColor() });
   }
 }
 
 /* ============ NOTE PANEL ============ */
 function updateNotePanel(){
   const panel = $('notePanel');
-  if (S.mode !== 'active'){ panel.style.display = 'none'; return; }
   const n = activeNotes.find(x => x.id === selectedNote);
-  if (!n){ panel.style.display = 'none'; return; }
+  if (!n){ panel.style.display = 'none'; syncNoteList(); return; }
   panel.style.display = 'flex';
   $('nPitch').textContent = noteName(n.midi);
   $('nStep').value = n.step + 1;
   $('nLen').value = n.len;
   $('nVol').value = Math.round((n.vol == null ? 1 : n.vol) * 100);
   $('nVolOut').textContent = Math.round((n.vol == null ? 1 : n.vol) * 100);
+  syncNoteList();
 }
 $('nStep').addEventListener('change', () => {
   const n = activeNotes.find(x => x.id === selectedNote);
   if (!n) return;
-  const v = Math.max(1, Math.min(S.steps, +$('nStep').value || 1)) - 1;
-  if (v + n.len > S.steps) return;
+  const v = clamp(Math.round(+$('nStep').value || 1), 1, S.steps) - 1;
   n.step = v;
+  if (n.step + n.len > S.steps) n.len = Math.max(1, S.steps - n.step);
   updateNotePanel(); updateStatus(); drawGrid(); edit();
 });
 $('nLen').addEventListener('change', () => {
   const n = activeNotes.find(x => x.id === selectedNote);
   if (!n) return;
-  const v = Math.max(0.1, Math.min(S.steps - n.step, +$('nLen').value || 1));
+  const v = clamp(Math.round(+$('nLen').value || 1), 1, S.steps - n.step);
   n.len = v;
   updateNotePanel(); updateStatus(); drawGrid(); edit();
 });
@@ -1062,12 +1596,11 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft'){ cursorStep = Math.max(0, cursorStep - 1); drawGrid(); }
   else if (e.key === 'Delete' || e.key === 'Backspace'){
     e.preventDefault();
-    if (S.mode === 'active' && selectedNote != null){
+    if (selectedNote != null){
       activeNotes = activeNotes.filter(n => n.id !== selectedNote);
       selectedNote = null; updateNotePanel();
     } else {
-      if (S.mode === 'active') activeNotes = [];
-      else for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
+      activeNotes = [];
     }
     edit();
   }
@@ -1138,114 +1671,109 @@ $('dlMp3').onclick = function(){
 };
 
 /* ============ CODE GENERATION ============ */
-function makeInoActive(stepMs, gatePct, total, barsTxt){
-  const vals = new Array(S.steps).fill(0);
-  for (const n of activeNotes){
-    for (let k = 0; k < n.len; k++){
-      const s = n.step + k;
-      if (s >= 0 && s < S.steps) vals[s] = 1;
-    }
-  }
-  let body = '';
-  for (let i = 0; i < vals.length; i += 16){
-    const chunk = vals.slice(i, i + 16).join(', ');
-    const cm = vals.slice(i, i + 16).map((v, k) => v ? 'BEEP' : '--');
-    body += '  ' + chunk + (i + 16 < vals.length ? ',' : ' ') +
-            '   /* ' + pad2(i) + ': ' + cm.join(' ') + ' */\n';
-  }
-  return '/* =====================================================================\n' +
-'   BEEP//1  --  rhythm song for ACTIVE buzzer + ESP32\n' +
-'   generated by BEEP//1 studio (ACTIVE mode)\n\n' +
-'   tempo     : ' + S.bpm + ' BPM (16th steps = ' + stepMs + ' ms)\n' +
-'   steps     : ' + S.steps + '  (' + barsTxt + ')\n' +
-'   note gate : ' + gatePct + ' %\n' +
-'   length    : ' + total + ' s\n' +
-'   sound     : fixed ~' + ACTIVE_FREQ + ' Hz (active buzzer plays one pitch only)\n' +
-'   pitch row : ignored by hardware, kept so you can switch to PASSIVE later\n' +
-'   hardware  : active buzzer  ->  NPN transistor from 5V, GPIO drives base\n' +
-'               (buzzer draws ~20-30 mA: do NOT power it straight from GPIO)\n' +
-'   ===================================================================== */\n\n' +
-'#define BUZZER_PIN   ' + S.pin + '\n' +
-'#define TEMPO_BPM    ' + S.bpm + '\n' +
-'#define SONG_STEPS   ' + S.steps + '\n' +
-'#define GATE_PCT     ' + gatePct + '\n' +
-'#define STEP_MS      (60000UL / (TEMPO_BPM * 4UL))\n' +
-'#define REPEAT_GAP   500\n\n' +
-'/* 1 = beep, 0 = rest (note names in comments are for PASSIVE mode) */\n' +
-'const uint8_t SONG[SONG_STEPS] = {\n' + body + '};\n\n' +
-'void setup() {\n' +
-'  pinMode(BUZZER_PIN, OUTPUT);\n' +
-'  digitalWrite(BUZZER_PIN, LOW);\n' +
-'}\n\n' +
-'void playSong() {\n' +
-'  const uint32_t step = STEP_MS;\n' +
-'  const uint32_t on   = (step * GATE_PCT) / 100UL;\n' +
-'  const uint32_t off  = (step > on) ? step - on : 0;\n' +
-'  for (uint16_t i = 0; i < SONG_STEPS; i++) {\n' +
-'    if (SONG[i]) {\n' +
-'      digitalWrite(BUZZER_PIN, HIGH);\n' +
-'      delay(on);\n' +
-'      digitalWrite(BUZZER_PIN, LOW);\n' +
-'      delay(off);\n' +
-'    } else {\n' +
-'      digitalWrite(BUZZER_PIN, LOW);\n' +
-'      delay(step);\n' +
-'    }\n' +
-'  }\n' +
-'}\n\n' +
-'void loop() {\n' +
-'  playSong();\n' +
-'  delay(REPEAT_GAP);\n' +
-'}\n';
-}
 function makeIno(){
   const stepMs = Math.round(60000 / (S.bpm * 4));
   const gatePct = Math.round(S.gate * 100);
   const dutyPct = Math.round(S.duty * 100);
-  const vals = [];
-  for (let i = 0; i < S.steps; i++) vals.push(pat[i] >= 0 ? Math.round(midiFreq(pat[i])) : 0);
-  let body = '';
-  for (let i = 0; i < vals.length; i += 8){
-    const chunk = vals.slice(i, i + 8).map(v => String(v).padStart(4, ' ')).join(', ');
-    const cm = vals.slice(i, i + 8).map((v, k) => v ? noteName(pat[i + k]) : '--');
-    body += '  ' + chunk + (i + 8 < vals.length ? ',' : ' ') +
-            '   /* ' + pad2(i) + ': ' + cm.join(' ') + ' */\n';
-  }
   const total = (S.steps * stepSec()).toFixed(2);
   const barsTxt = (S.steps % 16 === 0) ? (S.steps / 16) + ' bars' : S.steps + ' steps';
-  if (S.mode === 'active') return makeInoActive(stepMs, gatePct, total, barsTxt);
+  return makeInoPassive(stepMs, gatePct, dutyPct, total, barsTxt);
+}
+function makeInoPassive(stepMs, gatePct, dutyPct, total, barsTxt){
+  // one row per note — chords are several rows sharing the same start step
+  const notes = activeNotes.slice().sort((a, b) => (a.step - b.step) || (a.midi - b.midi));
+  if (notes.length === 0) notes.push({ step: 0, len: 1, midi: 60, vol: 0 });  // silent placeholder
+  const N = notes.length;
+  // biggest chord, for the firmware's arpeggio buffer
+  let maxV = 1;
+  for (const n of notes){
+    let v = 0;
+    for (const m of notes) if (m.step < n.step + n.len && m.step + m.len > n.step) v++;
+    if (v > maxV) maxV = v;
+  }
+  let stepBody = '', lenBody = '', fBody = '';
+  for (let i = 0; i < N; i += 8){
+    const sl = notes.slice(i, i + 8);
+    const sStr = sl.map(n => String(Math.round(n.step)).padStart(3, ' ')).join(', ');
+    const lStr = sl.map(n => String(Math.max(1, Math.round(n.len))).padStart(3, ' ')).join(', ');
+    const fStr = sl.map(n => String(n.vol === 0 ? 0 : Math.min(65535, Math.round(noteFreq(n)))).padStart(5, ' ')).join(', ');
+    const nStr = sl.map(n => n.vol === 0 ? '--' : noteName(n.midi)).join(' ');
+    const tail = (i + 8 < N) ? ',' : ' ';
+    stepBody += '  ' + sStr + tail + '   /* ' + pad2(i) + ': ' + nStr + ' */\n';
+    lenBody  += '  ' + lStr + tail + '\n';
+    fBody    += '  ' + fStr + tail + '\n';
+  }
   return '/* =====================================================================\n' +
-'   BEEP//1  --  1-bit beeper song for ESP32\n' +
+'   BEEP//1  --  passive piezo song for ESP32 (held notes + chords)\n' +
 '   generated by BEEP//1 studio (PASSIVE mode)\n\n' +
 '   tempo     : ' + S.bpm + ' BPM (16th steps = ' + stepMs + ' ms)\n' +
 '   steps     : ' + S.steps + '  (' + barsTxt + ')\n' +
 '   note gate : ' + gatePct + ' %\n' +
 '   duty      : ' + dutyPct + ' % (preview only; tone() is fixed 50 %)\n' +
 '   length    : ' + total + ' s\n' +
+'   notes     : ' + N + '  (biggest chord = ' + maxV + ' voices)\n' +
+'   chords    : voices are time-multiplexed (arpeggio) on the single pin\n' +
 '   hardware  : passive buzzer / piezo  ->  BUZZER_PIN  and  GND\n' +
 '   ===================================================================== */\n\n' +
 '#define BUZZER_PIN   ' + S.pin + '\n' +
 '#define TEMPO_BPM    ' + S.bpm + '\n' +
 '#define SONG_STEPS   ' + S.steps + '\n' +
 '#define GATE_PCT     ' + gatePct + '\n' +
+'#define DUTY_PCT     ' + dutyPct + '\n' +
 '#define STEP_MS      (60000UL / (TEMPO_BPM * 4UL))\n' +
-'#define REPEAT_GAP   500\n\n' +
-'/* frequency in Hz, 0 = rest */\n' +
-'const uint16_t SONG[SONG_STEPS] PROGMEM = {\n' + body + '};\n\n' +
+'#define REPEAT_GAP   500\n' +
+'#define NOTE_COUNT   ' + N + '\n' +
+'#define MAX_VOICES   ' + maxV + '\n' +
+'#define ARP_MS       6      /* ms per chord tone (chords flip at ~166 Hz) */\n\n' +
+'/* one row per note: start step, length in steps, frequency in Hz (0 = silence) */\n' +
+'const uint16_t N_STEP[NOTE_COUNT] = {\n' + stepBody + '};\n' +
+'const uint8_t  N_LEN [NOTE_COUNT] = {\n' + lenBody + '};\n' +
+'const uint16_t N_F   [NOTE_COUNT] = {\n' + fBody + '};\n\n' +
 'void setup() {\n' +
 '  pinMode(BUZZER_PIN, OUTPUT);\n' +
 '  digitalWrite(BUZZER_PIN, LOW);\n' +
 '}\n\n' +
 'void playSong() {\n' +
-'  const uint32_t step = STEP_MS;\n' +
-'  const uint32_t on   = (step * GATE_PCT) / 100UL;\n' +
-'  for (uint16_t i = 0; i < SONG_STEPS; i++) {\n' +
-'    uint16_t f = pgm_read_word(&SONG[i]);\n' +
-'    if (f > 0) tone(BUZZER_PIN, f, on);\n' +
-'    else       noTone(BUZZER_PIN);\n' +
-'    delay(step);\n' +
-'    noTone(BUZZER_PIN);\n' +
+'  const uint32_t step  = STEP_MS;\n' +
+'  const uint32_t total = (uint32_t)SONG_STEPS * step;\n' +
+'  uint32_t t = 0;\n' +
+'  uint16_t arp = 0;\n' +
+'  uint16_t lastF = 0;\n\n' +
+'  while (t < total) {\n' +
+'    /* voices sounding right now */\n' +
+'    uint16_t fs[MAX_VOICES];\n' +
+'    uint8_t  nf = 0;\n' +
+'    uint32_t nextEv = total;\n' +
+'    for (uint16_t i = 0; i < NOTE_COUNT; i++) {\n' +
+'      uint32_t on  = (uint32_t)N_STEP[i] * step;\n' +
+'      uint32_t off = on + ((uint32_t)N_LEN[i] * step * (uint32_t)GATE_PCT) / 100UL;\n' +
+'      if (t >= on && t < off) {\n' +
+'        if (N_F[i] > 0 && nf < MAX_VOICES) fs[nf++] = N_F[i];\n' +
+'        if (off < nextEv) nextEv = off;\n' +
+'      }\n' +
+'      if (on > t && on < nextEv) nextEv = on;\n' +
+'    }\n\n' +
+'    if (nf == 0) {\n' +
+'      if (lastF) { noTone(BUZZER_PIN); lastF = 0; }\n' +
+'      uint32_t gap = nextEv - t;\n' +
+'      if (gap > 10) gap = 10;                 /* poll every 10 ms while silent */\n' +
+'      delay(gap); t += gap;\n' +
+'      continue;\n' +
+'    }\n\n' +
+'    if (nf == 1) {\n' +
+'      /* one voice: hold it, retrigger only when the pitch changes */\n' +
+'      if (fs[0] != lastF) { tone(BUZZER_PIN, fs[0]); lastF = fs[0]; }\n' +
+'      uint32_t slice = nextEv - t;\n' +
+'      if (slice > 20) slice = 20;\n' +
+'      delay(slice); t += slice;\n' +
+'    } else {\n' +
+'      /* chord: flip through the voices every ARP_MS on the single pin */\n' +
+'      uint16_t f = fs[arp % nf]; arp++;\n' +
+'      if (f != lastF) { tone(BUZZER_PIN, f); lastF = f; }\n' +
+'      delay(ARP_MS); t += ARP_MS;\n' +
+'    }\n' +
 '  }\n' +
+'  noTone(BUZZER_PIN);\n' +
 '}\n\n' +
 'void loop() {\n' +
 '  playSong();\n' +
@@ -1266,39 +1794,31 @@ function makeIno(){
 '   -------------------------------------------------------------------- */\n';
 }
 function makeJson(){
+  // detailed note list (chords = several notes on the same step)
   const notes = [];
-  if (S.mode === 'active'){
-    for (const n of activeNotes){
-      notes.push({ step: n.step, len: n.len, midi: n.midi, note: noteName(n.midi), vol: +(n.vol||1).toFixed(3) });
-    }
-  } else {
-    for (let i = 0; i < S.steps; i++){
-      if (pat[i] >= 0) notes.push({
-        step: i, midi: pat[i], note: noteName(pat[i]),
-        freq: +midiFreq(pat[i]).toFixed(2),
-        timeMs: Math.round(i * 60000 / (S.bpm * 4)),
-        durMs: Math.round(60000 / (S.bpm * 4) * S.gate)
-      });
-    }
+  for (const n of activeNotes){
+    notes.push({
+      step: n.step, len: n.len, midi: n.midi, note: noteName(n.midi),
+      freq: +noteFreq(n).toFixed(2),
+      timeMs: Math.round(n.step * 60000 / (S.bpm * 4)),
+      durMs: Math.round(60000 / (S.bpm * 4) * n.len * S.gate),
+      vol: +(n.vol == null ? 1 : n.vol).toFixed(3)
+    });
   }
-  // per-step pattern for compat
+  // per-step pattern kept for compat with older files (last voice wins)
   const pattern = new Array(S.steps).fill(-1);
-  if (S.mode === 'active'){
-    for (const n of activeNotes){
-      for (let k = 0; k < n.len; k++){
-        const s = n.step + k;
-        if (s >= 0 && s < S.steps) pattern[s] = n.midi;
-      }
+  for (const n of activeNotes){
+    for (let k = 0; k < n.len; k++){
+      const s = Math.round(n.step) + k;
+      if (s >= 0 && s < S.steps) pattern[s] = n.midi;
     }
-  } else {
-    for (let i = 0; i < S.steps; i++) pattern[i] = pat[i];
   }
   return JSON.stringify({
-    format: 'beep1', version: 2,
+    format: 'beep1', version: 4,
     bpm: S.bpm, steps: S.steps, stepMs: Math.round(60000 / (S.bpm * 4)),
-    gate: S.gate, duty: S.duty, pin: S.pin, mode: S.mode,
-    pattern: Array.from(pattern),
-    activeNotes: S.mode === 'active' ? activeNotes.map(n => ({ step: n.step, len: n.len, midi: n.midi, vol: n.vol })) : undefined,
+    gate: S.gate, duty: S.duty, pin: S.pin,
+    pattern: pattern,
+    activeNotes: activeNotes.map(n => ({ step: n.step, len: n.len, midi: n.midi, vol: n.vol, freq: (n.freq > 0 ? +n.freq.toFixed(3) : 0), color: Math.round(n.color) || 0 })),
     notes: notes
   }, null, 2);
 }
@@ -1332,7 +1852,7 @@ function importJson(t){
   const o = JSON.parse(t);
   if (!o || typeof o !== 'object' || (!Array.isArray(o.pattern) && !Array.isArray(o.activeNotes) && o.format !== 'beep1')) throw new Error('not a beep1 file');
   applyState({
-    bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, pin: +o.pin, mode: o.mode,
+    bpm: +o.bpm, steps: +o.steps, gate: +o.gate, duty: +o.duty, pin: +o.pin,
     pattern: Array.isArray(o.pattern) ? o.pattern : null,
     activeNotes: Array.isArray(o.activeNotes) ? o.activeNotes : null
   });
@@ -1342,12 +1862,48 @@ function midiFromFreq(f){
   if (!(f > 0)) return -1;
   return clampM(Math.round(69 + 12 * Math.log(f / 440) / Math.LN2));
 }
-function importIno(t){
+function parseIno(t){
   const grabNum = re => { const m = t.match(re); return m ? +m[1] : NaN; };
-  let steps = grabNum(/#define\s+SONG_STEPS\s+(\d+)/);
+  const grabArr = nm => {
+    const m = t.match(new RegExp('\\b' + nm + '\\s*\\[[^\\]]*\\]\\s*=\\s*\\{([\\s\\S]*?)\\}'));
+    if (!m) return null;
+    return m[1].replace(/\/\*[\s\S]*?\*\//g, ' ').split(/[^0-9]+/).filter(x => x !== '').map(Number);
+  };
   const bpm = grabNum(/#define\s+TEMPO_BPM\s+(\d+)/);
   const gate = grabNum(/#define\s+GATE_PCT\s+(\d+)/);
   const pin = grabNum(/#define\s+BUZZER_PIN\s+(\d+)/);
+  const duty = grabNum(/#define\s+DUTY_PCT\s+(\d+)/);
+
+  // ---- new note-table format (held notes + chords, arpeggio playback) ----
+  const st = grabArr('N_STEP');
+  if (st){
+    const ln = grabArr('N_LEN'), fq = grabArr('N_F');
+    if (!ln || !fq || ln.length !== st.length || fq.length !== st.length) throw new Error('incomplete note table');
+    let steps = grabNum(/#define\s+SONG_STEPS\s+(\d+)/);
+    if (!isFinite(steps) || steps <= 0){
+      steps = 1;
+      for (let i = 0; i < st.length; i++) steps = Math.max(steps, Math.round(st[i]) + Math.round(ln[i]));
+    }
+    steps = Math.max(1, Math.min(MAXSTEPS, Math.round(steps)));
+    const notes = [];
+    for (let i = 0; i < st.length; i++){
+      if (!(fq[i] > 0)) continue;
+      const step = Math.round(st[i]);
+      if (step < 0 || step >= steps) continue;
+      const len = Math.max(1, Math.round(ln[i]));
+      notes.push({ step: step, len: Math.min(len, steps - step), midi: midiFromFreq(fq[i]), vol: 1, freq: fq[i], color: nextPaletteColor() });
+    }
+    return {
+      bpm: bpm, steps: steps,
+      gate: isFinite(gate) ? gate / 100 : NaN,
+      duty: isFinite(duty) ? duty / 100 : NaN,
+      pin: pin,
+      activeNotes: notes
+    };
+  }
+
+  // ---- legacy 1-row SONG[] format (0/1 = active beeper, Hz = passive) ----
+  let steps = grabNum(/#define\s+SONG_STEPS\s+(\d+)/);
   const bodyM = t.match(/SONG\s*\[[^\]]*\]\s*(?:PROGMEM\s*)?=\s*\{([\s\S]*?)\};/);
   if (!bodyM) throw new Error('no SONG found');
   const nums = bodyM[1].replace(/\/\*[\s\S]*?\*\//g, ' ').split(/[^0-9]+/).filter(x => x !== '').map(Number);
@@ -1356,16 +1912,16 @@ function importIno(t){
   steps = Math.max(1, Math.min(MAXSTEPS, Math.min(steps, nums.length)));
   const isActive = /ACTIVE mode/.test(t) || nums.every(v => v <= 1);
   const pattern = nums.slice(0, steps).map(v => isActive ? (v > 0 ? 72 : -1) : midiFromFreq(v));
-  applyState({
+  return {
     bpm: bpm, steps: steps,
-    gate: isFinite(gate) ? gate / 100 : NaN, duty: NaN, pin: pin,
-    mode: isActive ? 'active' : 'passive', pattern: pattern
-  });
-  if (isActive){
-    // merge runs into notes
-    const p = pattern.slice();
-    activeNotes = patToActiveNotes(p);
-  }
+    gate: isFinite(gate) ? gate / 100 : NaN,
+    duty: isFinite(duty) ? duty / 100 : NaN,
+    pin: pin,
+    pattern: pattern
+  };
+}
+function importIno(t){
+  applyState(parseIno(t));
   return true;
 }
 function applyState(o){
@@ -1377,48 +1933,41 @@ function applyState(o){
     S.duty = presets.reduce((a, b) => Math.abs(b - o.duty) < Math.abs(a - o.duty) ? b : a);
   }
   if (isFinite(o.pin)) S.pin = Math.max(1, Math.min(48, Math.round(o.pin)));
-  if (o.mode === 'active' || o.mode === 'passive') S.mode = o.mode;
-  // reset data
-  for (let i = 0; i < MAXSTEPS; i++) pat[i] = -1;
+  // reset data — passive note list
   activeNotes = [];
   selectedNote = null;
-  if (S.mode === 'active'){
-    if (Array.isArray(o.activeNotes)){
-      for (const n of o.activeNotes){
-        activeNotes.push({
-          id: nextNoteId++,
-          step: Math.max(0, Math.min(S.steps - 1, Math.round(+n.step) || 0)),
-          len: Math.max(0.1, Math.min(S.steps, +n.len || 1)),
-          midi: clampM(Math.round(+n.midi) || 72),
-          vol: (isFinite(+n.vol) ? clamp(+n.vol, 0, 1) : 1)
-        });
-      }
-      // clamp lengths
-      for (const n of activeNotes){
-        if (n.step + n.len > S.steps) n.len = Math.max(0.1, S.steps - n.step);
-      }
-    } else if (Array.isArray(o.pattern)){
-      activeNotes = patToActiveNotes(o.pattern.map(v => (isFinite(+v) ? Math.round(+v) : -1)));
+  if (Array.isArray(o.activeNotes)){
+    for (const n of o.activeNotes){
+      const m = Math.round(+n.midi);
+      if (!isFinite(m)) continue;
+      const fv = +n.freq;
+      activeNotes.push({
+        id: nextNoteId++,
+        step: Math.max(0, Math.min(S.steps - 1, Math.round(+n.step) || 0)),
+        len: Math.max(1, Math.min(S.steps, Math.round(+n.len || 1))),
+        midi: clampM(m),
+        vol: (isFinite(+n.vol) ? clamp(+n.vol, 0, 1) : 1),
+        freq: (isFinite(fv) && fv > 0) ? fv : 0,
+        color: (n.color != null && isFinite(+n.color)) ? (Math.round(+n.color) % PALETTE.length + PALETTE.length) % PALETTE.length : nextPaletteColor()
+      });
     }
-  } else {
-    if (Array.isArray(o.pattern)){
-      const n = Math.min(o.pattern.length, S.steps, MAXSTEPS);
-      for (let i = 0; i < n; i++){
-        const v = Math.round(+o.pattern[i]);
-        pat[i] = (isFinite(v) && v >= 0) ? clampM(v) : -1;
-      }
+    // clamp lengths
+    for (const n of activeNotes){
+      if (n.step + n.len > S.steps) n.len = Math.max(1, S.steps - n.step);
     }
+  } else if (Array.isArray(o.pattern)){
+    // legacy per-step pattern: merge runs of the same pitch into held notes
+    activeNotes = patToActiveNotes(o.pattern.map(v => (isFinite(+v) ? Math.round(+v) : -1)));
   }
   $('bpm').value = S.bpm; $('bpmOut').textContent = S.bpm + ' BPM';
   $('gate').value = Math.round(S.gate * 100); $('gateOut').textContent = Math.round(S.gate * 100) + ' %';
   $('duty').value = String(S.duty);
   $('pin').value = S.pin;
-  $('mode').value = S.mode;
   cursorStep = Math.min(cursorStep, S.steps - 1);
   updateNotePanel();
+  renderNoteList();
   syncStepsUI(); layout(); refreshAudio();
-}
-$('codeBtn').onclick = () => {
+}$('codeBtn').onclick = () => {
   const b = $('codeBox');
   b.classList.toggle('open');
   $('codeBtn').classList.toggle('on', b.classList.contains('open'));
@@ -1437,6 +1986,62 @@ function fallbackCopy(txt, cb){
   ta.remove();
 }
 
+/* ============ PROJECT WIRING ============ */
+$('plLibBtn').onclick = () => { if ($('projRail').hidden) openLibrary(); else closeLibrary(); };
+$('plCloseBtn').onclick = closeLibrary;
+$('plNewBtn').onclick = () => {
+  newProject(nowLabel(), false);
+  openLibrary();
+};
+$('plExportBtn').onclick = exportCurrentProject;
+$('plImportBtn').onclick = openImportPickerAsNew;
+$('plImportFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  importProjectFromFile(f);
+});
+
+// keyboard: P toggles project library
+window.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT') return;
+  if (e.key === 'p' || e.key === 'P') {
+    e.preventDefault();
+    if ($('projRail') && !$('projRail').hidden) closeLibrary();
+    else openLibrary();
+  }
+});
+
+// wire controls to mark dirty on changes that affect the project
+function wireDirty(id){
+  const el = $(id);
+  if (!el) return;
+  const fn = () => markDirty();
+  el.addEventListener('input', fn);
+  el.addEventListener('change', fn);
+}
+wireDirty('bpm');
+wireDirty('steps');
+wireDirty('stepsR');
+wireDirty('gate');
+wireDirty('duty');
+wireDirty('vol');
+wireDirty('pin');
+$('loopChk').addEventListener('change', () => { markDirty(); });
+// note-panel edits are already triggering edit()/liveRestart(); also mark dirty there
+$('nStep').addEventListener('change', () => { markDirty(); });
+$('nLen').addEventListener('change', () => { markDirty(); });
+$('nVol').addEventListener('change', () => { markDirty(); });
+$('nDel').addEventListener('click', () => { markDirty(); });
+$('rotL').onclick = () => { markDirty(); };
+$('rotR').onclick = () => { markDirty(); };
+$('octD').onclick = () => { markDirty(); };
+$('octU').onclick = () => { markDirty(); };
+$('randBtn').onclick = () => { markDirty(); };
+$('clearBtn').onclick = () => { markDirty(); };
+
+
 /* ============ RESIZE + BOOT ============ */
 let rz = null;
 window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { layout(); drawGrid(); }, 80); });
@@ -1444,13 +2049,37 @@ window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() =
 $('bpmOut').textContent = S.bpm + ' BPM';
 $('gateOut').textContent = Math.round(S.gate * 100) + ' %';
 $('volOut').textContent = Math.round(S.vol * 100);
-loadDemo();
-layout();
-updateStatus();
-buildCode();
-syncTransport();
-requestAnimationFrame(tick);
-setTimeout(() => { layout(); drawGrid(); }, 250);
+// boot: restore last project if present, otherwise demo
+(function boot(){
+  let started = false;
+  try {
+    const lib = loadLibrary();
+    PL.list = lib;
+      if (lib.length > 0) {
+      const last = lib[0];
+      openProjectById(last.id, false);
+      started = true;
+    }
+  } catch (e) { /* storage may be unavailable */ }
+  if (!started) {
+    // first run: open a fresh project, drop the demo into it, then save it
+    newProject(nowLabel(), false);
+    loadDemo();
+    markDirty();
+  }
+  updateCurrentLabel();
+  renderLibrary();
+  layout();
+  updateStatus();
+  buildCode();
+  syncTransport();
+  requestAnimationFrame(tick);
+  setTimeout(() => { layout(); drawGrid(); }, 250);
+  if (PL.currentId != null) {
+    updateCurrentLabel();
+    renderLibrary();
+  }
+})();
 })();
 </script>
 </body>
