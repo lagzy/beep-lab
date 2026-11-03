@@ -51,7 +51,7 @@ If you serve the page from GitHub Pages (HTTPS) Web Serial still works. If you u
 **Troubleshooting: no COM port**
 
 - Only **Chrome or Edge** support Web Serial.
-- The board uses a **CH340** USB-serial chip. On a fresh Windows PC, open **Device Manager → Ports (COM & LPT)**. If you see `USB-SERIAL CH340 (COMx)`, the OS sees the board. If `USB2.0-Serial` shows under **Other devices** with a warning, install the WCH CH340 driver, reboot and replug.
+- The board uses a **CH340** USB-serial chip. On a fresh Windows PC, open **Device Manager → Ports (COM & LPT)**. If you see `USB-SERIAL CH340 (COMx)`, the OS sees the board. If `USB2.0-Serial` shows under **Other devices** with a warning, install the WCH CH340 driver (`CH341SER.EXE`, signed, Windows 11/10 32/64-bit: <https://www.wch-ic.com/downloads/CH341SER_EXE.html>), reboot and replug.
 - If nothing appears, try a different **data** USB cable and a different USB port.
 - Close the app/port on any other PC first — only one machine can hold the COM port at a time.
 
