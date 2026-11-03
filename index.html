@@ -66,6 +66,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:12px;height:16px;b
 input[type=range]::-moz-range-track{height:4px;background:var(--ink)}
 input[type=range]::-moz-range-thumb{width:10px;height:14px;background:var(--acc);border:2px solid var(--ink);border-radius:0}
 select,input[type=number]{font-family:inherit;font-size:11px;border:2px solid var(--ink);background:#fff;padding:6px 6px;color:var(--ink)}
+select#steps{min-width:64px}
 input[type=number]{width:56px;text-align:center}
 .grp{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end}
 .sep{width:2px;background:var(--ink);align-self:stretch}
@@ -131,6 +132,8 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
 .note-rail .nfld{display:flex;flex-direction:column;gap:3px}
 .note-empty{padding:16px 8px;font-size:10px;letter-spacing:.04em;color:var(--mute);line-height:1.7}
 .note-form{display:flex;flex-direction:column;gap:12px;padding:4px 2px}
+.note-form[hidden]{display:none}
+.note-empty[hidden]{display:none}
 .note-form label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .note-form .nm{font-family:'VT323',monospace;font-size:22px;line-height:1}
 .note-form .row{display:flex;align-items:center;gap:8px}
@@ -200,6 +203,7 @@ body.simple .stepper button.sm{width:48px;padding:10px 0;font-size:22px;line-hei
   body.simple .pdot{width:26px;height:26px}
 }
 
+</style>
 </head>
 <body class="simple">
 <div class="wrap">
@@ -390,6 +394,7 @@ let hover = null, cursorStep = 0, playStep = -1;
 let playing = false;
 let selectedNote = null;
 let dragState = null;
+let simpleMode = true;
 
 /* per-note colours (index stored on each note, cycles on creation) */
 const PALETTE = ['#e23d28','#e6973a','#c9b021','#5aa64b','#2f9e8f','#2f7fd0','#6b57c9','#b0419e','#8a6a4a','#2b2b2b','#0f8a5f','#c94f7c'];
@@ -1154,9 +1159,12 @@ function updateStatus(){
   const len = (S.steps * stepSec());
   lenLcd.textContent = len.toFixed(2) + 's';
   $('stepsOut').textContent = stepsLabel();
-  let left = 'NOTES <b>' + count + '</b>' +
-             ' &nbsp;&middot;&nbsp; <b>' + len.toFixed(2) + 's</b>' +
-             ' &nbsp;&middot;&nbsp; DUTY <b>' + Math.round(S.duty * 100) + '%</b>';
+  let left = simpleMode
+    ? '<b>' + count + '</b> ' + (count === 1 ? 'note' : 'notes') +
+      ' &nbsp;&middot;&nbsp; <b>' + len.toFixed(2) + 's</b>'
+    : 'NOTES <b>' + count + '</b>' +
+      ' &nbsp;&middot;&nbsp; <b>' + len.toFixed(2) + 's</b>' +
+      ' &nbsp;&middot;&nbsp; DUTY <b>' + Math.round(S.duty * 100) + '%</b>';
   if (hover){
     const hn = noteAtCell(hover.s, hover.m);
     const hf = hn ? noteFreq(hn) : midiFreq(hover.m);
@@ -1420,7 +1428,6 @@ $('noteRailBtn').onclick = () => { if ($('noteRail').hidden) openNoteRail(); els
 $('noteRailClose').onclick = closeNoteRail;
 
 /* ============ SIMPLE / ADVANCED MODE ============ */
-let simpleMode = true;
 try { if (localStorage.getItem('beep1.simple') === '0') simpleMode = false; } catch (e) {}
 function applyUiMode(){
   document.body.classList.toggle('simple', simpleMode);

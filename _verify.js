@@ -203,6 +203,9 @@ try {
   console.log('LOAD THREW:', e && e.stack ? e.stack : e);
 }
 const res = globalObj.__RESULT || ['(no result)'];
+const openStyle = (html.match(/<style\b/gi) || []).length;
+const closeStyle = (html.match(/<\/style>/gi) || []).length;
+res.unshift((openStyle === closeStyle && openStyle > 0 ? 'PASS' : 'FAIL') + ' html style tag balanced :: ' + openStyle + '/' + closeStyle);
 const failed = res.filter(x => /^(FAIL|THREW)/.test(x));
 res.forEach(r => console.log(r));
 console.log('\n' + (failed.length ? failed.length + ' FAILING' : 'ALL PASS') + ' (' + res.length + ' checks)');
