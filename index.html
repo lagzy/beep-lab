@@ -152,9 +152,56 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
   header{flex-wrap:wrap}
   input[type=range]{width:88px}
 }
-</style>
+
+/* ---------- SIMPLE (kid-friendly) vs ADVANCED ---------- */
+body:not(.simple) .simple-only{display:none !important}
+body.simple .pro-only{display:none !important}
+body.simple{font-size:14px}
+body.simple button{font-size:15px;letter-spacing:.05em;padding:14px 18px}
+body.simple button.sm{padding:12px 14px;font-size:13px}
+body.simple button.pri{min-width:160px;font-size:18px}
+body.simple .controls{gap:18px 30px;padding:16px}
+body.simple .ctl .mono-lbl{font-size:12px}
+body.simple .ctl output{font-size:26px}
+body.simple input[type=range]{width:170px;height:26px}
+body.simple input[type=range]::-webkit-slider-runnable-track{height:8px}
+body.simple input[type=range]::-webkit-slider-thumb{width:24px;height:28px;margin-top:-11px}
+body.simple input[type=range]::-moz-range-track{height:8px}
+body.simple input[type=range]::-moz-range-thumb{width:22px;height:26px}
+body.simple .lcd b{font-size:32px}
+body.simple .hint{font-size:11px;line-height:2.1}
+body.simple .chk{font-size:12px;padding:11px 13px}
+body.simple .rail-head .mono-lbl{font-size:12px}
+
+/* colour palette dots */
+.palette{display:flex;flex-wrap:wrap;gap:7px}
+.pdot{width:28px;height:28px;border:2px solid var(--ink);padding:0;cursor:pointer}
+.pdot:hover{outline:3px solid var(--acc);outline-offset:1px}
+.pdot.sel{outline:3px solid var(--acc);outline-offset:1px;border-color:var(--acc)}
+
+/* big +- steppers */
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:44px;padding:9px 0;text-align:center;font-size:20px;line-height:1}
+.stepper .val{font-family:'VT323',monospace;font-size:28px;line-height:1;min-width:34px;text-align:center}
+
+/* friendly sound readout */
+.sound-badge{display:flex;align-items:center;gap:10px}
+.sound-badge .glyph{font-size:24px}
+
+/* keep compact controls compact even in simple mode */
+body.simple .pdot{width:30px;height:30px;padding:0;font-size:0}
+body.simple .stepper button,
+body.simple .stepper button.sm{width:48px;padding:10px 0;font-size:22px;line-height:1}
+
+@media(max-width:760px){
+  body.simple input[type=range]{width:118px}
+  body.simple button{padding:12px 14px}
+  body.simple button.pri{min-width:120px}
+  body.simple .pdot{width:26px;height:26px}
+}
+
 </head>
-<body>
+<body class="simple">
 <div class="wrap">
 
   <header>
@@ -179,31 +226,32 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
       <div class="spacer"></div>
       <div class="lcd" id="posLcd"><b>01/32</b><i>STEP</i></div>
       <div class="lcd" id="lenLcd"><b>1.71s</b><i>LENGTH</i></div>
+      <button id="uiBtn" class="sm" title="switch between Simple and Advanced">&#9881; ADVANCED</button>
     </div>
   </header>
 
   <div class="panel controls">
     <div class="ctl">
-      <span class="mono-lbl">Tempo</span>
+      <span class="mono-lbl"><span class="simple-only">Speed</span><span class="pro-only">Tempo</span></span>
       <div class="row"><input type="range" id="bpm" min="40" max="320" value="150"><output id="bpmOut">150 BPM</output></div>
     </div>
     <div class="ctl">
-      <span class="mono-lbl">Steps (16th)</span>
+      <span class="mono-lbl"><span class="simple-only">Song length</span><span class="pro-only">Steps (16th)</span></span>
       <div class="row"><select id="steps">
         <option value="16">16</option><option value="32" selected>32</option><option value="48">48</option>
         <option value="64">64</option><option value="96">96</option><option value="128">128</option>
       </select><output id="stepsOut">2 BARS</output></div>
       <div class="row"><input type="range" id="stepsR" min="1" max="128" step="1" value="32" title="track length"></div>
     </div>
-    <div class="ctl">
+    <div class="ctl pro-only">
       <span class="mono-lbl">Note length (gate)</span>
       <div class="row"><input type="range" id="gate" min="5" max="100" value="85"><output id="gateOut">85 %</output></div>
     </div>
-    <div class="ctl">
+    <div class="ctl pro-only">
       <span class="mono-lbl">Buzzer type</span>
       <div class="row"><output style="font-size:10px;letter-spacing:.1em">PASSIVE piezo</output></div>
     </div>
-    <div class="ctl">
+    <div class="ctl pro-only">
       <span class="mono-lbl">Duty / timbre</span>
       <div class="row"><select id="duty">
         <option value="0.125">12.5 % thin</option>
@@ -216,8 +264,8 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
       <span class="mono-lbl">Volume (master)</span>
       <div class="row"><input type="range" id="vol" min="0" max="100" value="75"><output id="volOut">75</output></div>
     </div>
-    <div class="sep"></div>
-    <div class="ctl">
+    <div class="sep pro-only"></div>
+    <div class="ctl pro-only">
       <span class="mono-lbl">Buzzer pin</span>
       <div class="row"><input type="number" id="pin" min="1" max="48" value="4"></div>
     </div>
@@ -225,16 +273,16 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
     <div class="ctl">
       <span class="mono-lbl">Edit</span>
       <div class="grp">
-        <button class="sm" id="rotL" title="shift left">&laquo;</button>
-        <button class="sm" id="rotR" title="shift right">&raquo;</button>
-        <button class="sm" id="octD" title="octave down">OCT&minus;</button>
-        <button class="sm" id="octU" title="octave up">OCT+</button>
-        <button class="sm" id="randBtn">DICE</button>
-        <button class="sm" id="demoBtn">DEMO</button>
-        <button class="sm" id="clearBtn">CLEAR</button>
+        <button class="sm pro-only" id="rotL" title="shift left">&laquo;</button>
+        <button class="sm pro-only" id="rotR" title="shift right">&raquo;</button>
+        <button class="sm pro-only" id="octD" title="octave down">OCT&minus;</button>
+        <button class="sm pro-only" id="octU" title="octave up">OCT+</button>
+        <button class="sm pro-only" id="randBtn">DICE</button>
+        <button class="sm" id="demoBtn">&#127925; DEMO</button>
+        <button class="sm" id="clearBtn">&#128465; CLEAR</button>
       </div>
-    </div>      <button id="plLibBtn" class="sm" title="open project library">&#9776; PROJECTS</button>
-      <button id="noteRailBtn" class="sm" title="show/hide the note inspector">&#9834; NOTES</button>
+    </div>      <button id="plLibBtn" class="sm pro-only" title="open project library">&#9776; PROJECTS</button>
+      <button id="noteRailBtn" class="sm" title="show/hide note settings">&#9834; NOTES</button>
       <span class="mono-lbl" id="plCurrentLbl" style="display:none">CURRENT</span>
       <span class="mono-lbl" id="plCurrentName" style="display:none;font-family:'VT323',monospace;font-size:17px;line-height:1;letter-spacing:.02em"></span>
 
@@ -255,15 +303,22 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
       </div>
       <div class="note-empty" id="noteEmpty">click a note on the grid to edit its sound, length and colour</div>
       <div class="note-form" id="noteForm" hidden>
-        <div class="nfld"><label>Colour</label><button class="nswatch" id="nColor" title="click to change colour"></button></div>
-        <div class="nfld"><label>Sound</label><span class="nm" id="nPitch">&mdash;</span></div>
-        <div class="nfld"><label>Frequency (Hz)</label>
-          <div class="row"><input type="range" id="nFreqR" min="20" max="4000" step="1"><input type="number" id="nFreq" min="20" max="12000" step="1"></div>
+        <div class="nfld"><label>Colour</label><div class="palette" id="nPalette"></div></div>
+        <div class="nfld"><label>Sound</label><div class="sound-badge"><span class="glyph">&#9834;</span><span class="nm" id="nPitch">&mdash;</span></div></div>
+        <div class="nfld"><label><span class="simple-only">Pitch</span><span class="pro-only">Frequency (Hz)</span></label>
+          <div class="row"><input type="range" id="nFreqR" min="20" max="4000" step="1"><input type="number" id="nFreq" class="pro-only" min="20" max="12000" step="1"></div>
         </div>
-        <div class="nfld"><label>Start step</label><input type="number" id="nStep" min="1"></div>
-        <div class="nfld"><label>Length (steps)</label><input type="number" id="nLen" min="1" step="1"></div>
+        <div class="nfld pro-only"><label>Start step</label><input type="number" id="nStep" min="1"></div>
+        <div class="nfld"><label>Length</label>
+          <div class="stepper">
+            <button class="sm" id="nLenMinus" title="shorter">&#8722;</button>
+            <span class="val" id="nLenVal">1</span>
+            <button class="sm" id="nLenPlus" title="longer">+</button>
+            <input type="number" id="nLen" class="pro-only" min="1" step="1">
+          </div>
+        </div>
         <div class="nfld"><label>Volume</label><div class="row"><input type="range" id="nVol" min="0" max="100" value="100"><output id="nVolOut">100</output></div></div>
-        <button class="sm" id="nDel">DELETE NOTE</button>
+        <button class="sm" id="nDel">&#128465; REMOVE NOTE</button>
       </div>
     </aside>
   </div>
@@ -289,24 +344,27 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
   <div class="panel bottom" style="margin-top:10px">
     <div class="status" id="status">&mdash;</div>
     <div class="dl">
-      <button id="dlMp3">&#8615; MP3</button>
-      <button id="dlWav">&#8615; WAV</button>
-      <button id="dlIno" class="on">&#8615; ARDUINO .INO</button>
-      <button id="dlJson">&#8615; .JSON</button>
-      <button id="impBtn">&#8613; IMPORT</button>
-      <button id="codeBtn">&lt;/&gt; CODE</button>
+      <button id="dlMp3">&#8615; SAVE MP3</button>
+      <button id="dlWav">&#8615; SAVE WAV</button>
+      <button id="dlIno" class="on pro-only">&#8615; ARDUINO .INO</button>
+      <button id="dlJson" class="pro-only">&#8615; .JSON</button>
+      <button id="impBtn" class="pro-only">&#8613; IMPORT</button>
+      <button id="codeBtn" class="pro-only">&lt;/&gt; CODE</button>
     </div>
     <input type="file" id="impFile" accept=".json,.ino,.txt" style="display:none">
   </div>
 
-  <div class="codebox" id="codeBox">
+  <div class="codebox pro-only" id="codeBox">
     <div class="bar"><span id="codeName">beep1_song.ino</span><button id="copyBtn">COPY</button></div>
     <pre id="codeOut"></pre>
   </div>
 
-  <div class="hint">
+  <div class="hint simple-only">
+    tap the grid to add a note &middot; tap a note to change its sound, colour or length &middot; drag a note to move it &middot; drag its edge to make it longer &middot; <b>SPACE</b> to play / stop
+  </div>
+  <div class="hint pro-only">
     click = paint note &middot; drag = lay a stroke of notes &middot; click a note = move it &middot; drag a note corner = resize length &middot; shift+drag = volume &middot; right-click = erase note &middot;
-    stack another pitch on the same step = chord (playback arpeggios the voices) &middot; edit each note&rsquo;s frequency &amp; colour in the NOTE INSPECTOR &middot; click ruler = set start &middot; <b>SPACE</b> play/stop &middot; <b>&larr;&rarr;</b> move start &middot; <b>L</b> loop &middot; <b>DEL</b> delete / clear &middot; <b>P</b> project library
+    stack another pitch on the same step = chord (playback arpeggios the voices) &middot; edit each note&rsquo;s frequency &amp; colour in the NOTE SETTINGS panel &middot; click ruler = set start &middot; <b>SPACE</b> play/stop &middot; <b>&larr;&rarr;</b> move start &middot; <b>L</b> loop &middot; <b>DEL</b> delete / clear &middot; <b>P</b> project library
   </div>
 </div>
 
@@ -1361,6 +1419,21 @@ function closeNoteRail(){ $('noteRail').hidden = true; layout(); drawGrid(); }
 $('noteRailBtn').onclick = () => { if ($('noteRail').hidden) openNoteRail(); else closeNoteRail(); };
 $('noteRailClose').onclick = closeNoteRail;
 
+/* ============ SIMPLE / ADVANCED MODE ============ */
+let simpleMode = true;
+try { if (localStorage.getItem('beep1.simple') === '0') simpleMode = false; } catch (e) {}
+function applyUiMode(){
+  document.body.classList.toggle('simple', simpleMode);
+  const b = $('uiBtn');
+  if (b) b.innerHTML = simpleMode ? '&#9881; ADVANCED' : '&#9786; SIMPLE';
+  layout(); drawGrid(); updateNotePanel();
+}
+$('uiBtn').onclick = () => {
+  simpleMode = !simpleMode;
+  try { localStorage.setItem('beep1.simple', simpleMode ? '1' : '0'); } catch (e) {}
+  applyUiMode();
+};
+
 let dirtyT = null;
 function reseekRestart(){
   if (!playing) { updateStatus(); drawGrid(); buildCode(); return; }
@@ -1432,9 +1505,33 @@ function randomize(){
 }
 
 /* ============ NOTE PANEL (side form) ============ */
+function renderPalette(){
+  const el = $('nPalette');
+  if (!el) return;
+  const n = activeNotes.find(x => x.id === selectedNote);
+  const cur = n ? ((Math.round(n.color) % PALETTE.length) + PALETTE.length) % PALETTE.length : -1;
+  if (!el.children.length){
+    for (let i = 0; i < PALETTE.length; i++){
+      const b = document.createElement('button');
+      b.className = 'pdot';
+      b.style.background = PALETTE[i];
+      b.title = 'colour ' + (i + 1);
+      b.dataset.color = String(i);
+      b.addEventListener('click', () => {
+        const m = activeNotes.find(x => x.id === selectedNote);
+        if (!m) return;
+        m.color = +b.dataset.color;
+        updateNotePanel(); drawGrid(); edit();
+      });
+      el.appendChild(b);
+    }
+  }
+  Array.prototype.forEach.call(el.children, (b, i) => b.classList.toggle('sel', i === cur));
+}
 function updateNotePanel(){
   const form = $('noteForm'), empty = $('noteEmpty');
   const n = activeNotes.find(x => x.id === selectedNote);
+  renderPalette();
   if (!n){ if (form) form.hidden = true; if (empty) empty.hidden = false; return; }
   if (empty) empty.hidden = true;
   if (form) form.hidden = false;
@@ -1442,9 +1539,9 @@ function updateNotePanel(){
   $('nPitch').textContent = noteName(n.midi) + '  ' + f + ' Hz';
   if ($('nFreq')) $('nFreq').value = f;
   if ($('nFreqR')) $('nFreqR').value = clamp(f, 20, 4000);
-  if ($('nColor')) $('nColor').style.background = noteColor(n.color);
   $('nStep').value = n.step + 1;
   $('nLen').value = n.len;
+  if ($('nLenVal')) $('nLenVal').textContent = n.len;
   $('nVol').value = Math.round((n.vol == null ? 1 : n.vol) * 100);
   $('nVolOut').textContent = Math.round((n.vol == null ? 1 : n.vol) * 100);
 }
@@ -1459,19 +1556,20 @@ function applyNoteFreq(src, snap){
   $('nPitch').textContent = noteName(n.midi) + '  ' + rf + ' Hz';
   if (src.id === 'nFreqR'){ $('nFreq').value = rf; }
   else if ($('nFreqR')){ $('nFreqR').value = clamp(rf, 20, 4000); }
-  if ($('nColor')) $('nColor').style.background = noteColor(n.color);
   updateStatus(); drawGrid();
 }
+function nudgeLen(d){
+  const n = activeNotes.find(x => x.id === selectedNote);
+  if (!n) return;
+  n.len = clamp(n.len + d, 1, S.steps - n.step);
+  updateNotePanel(); updateStatus(); drawGrid(); edit();
+}
+$('nLenMinus').addEventListener('click', () => nudgeLen(-1));
+$('nLenPlus').addEventListener('click', () => nudgeLen(1));
 $('nFreq').addEventListener('input', () => applyNoteFreq($('nFreq'), false));
 $('nFreqR').addEventListener('input', () => applyNoteFreq($('nFreqR'), false));
 $('nFreq').addEventListener('change', () => { applyNoteFreq($('nFreq'), true); edit(); });
 $('nFreqR').addEventListener('change', () => { applyNoteFreq($('nFreqR'), true); edit(); });
-$('nColor').addEventListener('click', () => {
-  const n = activeNotes.find(x => x.id === selectedNote);
-  if (!n) return;
-  n.color = (Math.round(n.color) + 1) % PALETTE.length;
-  updateNotePanel(); drawGrid(); edit();
-});
 $('nStep').addEventListener('change', () => {
   const n = activeNotes.find(x => x.id === selectedNote);
   if (!n) return;
@@ -1986,6 +2084,7 @@ $('volOut').textContent = Math.round(S.vol * 100);
   }
   updateCurrentLabel();
   renderLibrary();
+  applyUiMode();
   layout();
   updateStatus();
   buildCode();

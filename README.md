@@ -2,6 +2,10 @@
 
 `BEEP//1` — a single-file 1-bit **passive piezo** beeper studio for the ESP32 (open `index.html`).
 
+## Simple & Advanced
+
+The app opens in **Simple** mode, made for young kids: big buttons, friendly labels (Speed, Song length), a visual colour palette, and a big −/+ length stepper. Technical controls (tempo BPM fine-tuning, gate, duty, pin, rotate/octave, project library, `.ino`/`.json`/import/code export) are hidden until you press **⚙ ADVANCED** in the header. The toggle is remembered in `localStorage`, and everything stays fully available in Advanced mode.
+
 ## What it does
 
 - Piano-roll step editor for a **passive piezo / passive buzzer** (a real speaker tone, not a fixed-pitch active beeper).

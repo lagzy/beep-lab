@@ -163,6 +163,20 @@ const TEST = `
     selectedNote = activeNotes[0].id; $('nFreq').value = 880; applyNoteFreq($('nFreq'), true);
     ok('side freq sets note', activeNotes[0].freq === 880 && Math.abs(noteFreq(activeNotes[0]) - 880) < 1e-9, noteFreq(activeNotes[0]));
 
+    // simple mode: palette + length stepper + mode toggle
+    ok('starts in simple mode', simpleMode === true);
+    selectedNote = activeNotes[0].id; updateNotePanel();
+    ok('palette dot per colour', $('nPalette').children.length === PALETTE.length, $('nPalette').children.length);
+    const beforeLen = activeNotes[0].len;
+    nudgeLen(1);
+    ok('length stepper grows note', activeNotes[0].len === beforeLen + 1, activeNotes[0].len);
+    nudgeLen(-1);
+    ok('length stepper shrinks note', activeNotes[0].len === beforeLen, activeNotes[0].len);
+    simpleMode = false; applyUiMode();
+    ok('advanced mode drops simple class', document.body.classList.contains('simple') === false);
+    simpleMode = true; applyUiMode();
+    ok('simple mode adds simple class', document.body.classList.contains('simple') === true);
+
     // rotate never overflows
     S.steps = 4;
     activeNotes = [{ id: nextNoteId++, step: 3, len: 3, midi: 60, vol: 1, freq: 0, color: 0 }];
