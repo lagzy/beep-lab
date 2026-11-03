@@ -2396,12 +2396,9 @@ $('nStep').addEventListener('change', () => { markDirty(); });
 $('nLen').addEventListener('change', () => { markDirty(); });
 $('nVol').addEventListener('change', () => { markDirty(); });
 $('nDel').addEventListener('click', () => { markDirty(); });
-$('rotL').onclick = () => { markDirty(); };
-$('rotR').onclick = () => { markDirty(); };
-$('octD').onclick = () => { markDirty(); };
-$('octU').onclick = () => { markDirty(); };
-$('randBtn').onclick = () => { markDirty(); };
-$('clearBtn').onclick = () => { markDirty(); };
+/* NOTE: rotL/rotR/octD/octU/randBtn/clearBtn already call edit() (which marks
+   dirty) where their handlers are defined. Do not re-assign .onclick here —
+   that overwrites the real handlers and makes the buttons do nothing. */
 
 
 /* ============ RESIZE + BOOT ============ */

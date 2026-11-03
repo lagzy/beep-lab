@@ -177,6 +177,20 @@ const TEST = `
     simpleMode = true; applyUiMode();
     ok('simple mode adds simple class', document.body.classList.contains('simple') === true);
 
+    // toolbar buttons must keep their real handlers (regression: wireDirty clobbered .onclick)
+    S.steps = 32;
+    activeNotes = [{ id: nextNoteId++, step: 0, len: 1, midi: 60, vol: 1, freq: 0, color: 0 }];
+    const m0 = activeNotes[0].midi;
+    $('octU').onclick();
+    ok('octave up transposes +12', activeNotes[0].midi === m0 + 12, activeNotes[0].midi);
+    $('octD').onclick();
+    ok('octave down transposes -12', activeNotes[0].midi === m0, activeNotes[0].midi);
+    activeNotes = [{ id: nextNoteId++, step: 0, len: 1, midi: 60, vol: 1, freq: 0, color: 0 }];
+    $('rotR').onclick();
+    ok('shift right moves note', activeNotes[0].step === S.steps - 1, activeNotes[0].step);
+    $('rotL').onclick();
+    ok('shift left moves note back', activeNotes[0].step === 0, activeNotes[0].step);
+
     // device serial protocol (output switch / ESP32)
     S.steps = 32; S.bpm = 150; S.gate = .85; S.duty = .5; S.vol = .75; S.loop = true;
     activeNotes = [
