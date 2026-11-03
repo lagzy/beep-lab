@@ -148,15 +148,20 @@ const TEST = `
     ok('round-trip color', activeNotes[0].color === 2, activeNotes[0].color);
     ok('snap has no mode', typeof snapProject().mode === 'undefined');
 
-    // note inspector builds one row per note
+    // single-note side form follows the selection
     $('noteRail').hidden = false;
     activeNotes = [
       { id: nextNoteId++, step: 0, len: 1, midi: 60, vol: 1, freq: 0, color: 0 },
-      { id: nextNoteId++, step: 2, len: 1, midi: 64, vol: 1, freq: 0, color: 1 }
+      { id: nextNoteId++, step: 2, len: 3, midi: 64, vol: 1, freq: 0, color: 1 }
     ];
-    renderNoteList();
-    ok('inspector rows', noteRows.size === 2, noteRows.size);
-    ok('inspector list dom', $('noteList').children.length === 2, $('noteList').children.length);
+    selectedNote = null; updateNotePanel();
+    ok('form hidden with no selection', $('noteForm').hidden === true && $('noteEmpty').hidden === false);
+    selectedNote = activeNotes[1].id; updateNotePanel();
+    ok('form shown on select', $('noteForm').hidden === false);
+    ok('form shows length', +$('nLen').value === 3, +$('nLen').value);
+    ok('form shows sound name', /^E4/.test($('nPitch').textContent), $('nPitch').textContent);
+    selectedNote = activeNotes[0].id; $('nFreq').value = 880; applyNoteFreq($('nFreq'), true);
+    ok('side freq sets note', activeNotes[0].freq === 880 && Math.abs(noteFreq(activeNotes[0]) - 880) < 1e-9, noteFreq(activeNotes[0]));
 
     // rotate never overflows
     S.steps = 4;

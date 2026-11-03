@@ -128,19 +128,16 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
 .stage-row .gridwrap{flex:1 1 auto;min-width:0}
 .note-rail{flex:0 0 258px;display:flex;flex-direction:column;gap:8px;padding:10px 11px;border:2px solid var(--ink);background:var(--paper);max-height:560px}
 .note-rail[hidden]{display:none}
-.note-list{max-height:430px}
-.nrow{display:flex;align-items:center;gap:7px;padding:7px 8px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
-.nrow:hover{background:var(--soft)}
-.nrow.sel{background:#fff;border-left:3px solid var(--acc);padding-left:5px}
-.nswatch{width:15px;height:15px;border:2px solid var(--ink);flex:0 0 auto;padding:0;cursor:pointer}
-.nswatch:hover{outline:2px solid var(--acc);outline-offset:1px}
-.nrow .ninfo{flex:1 1 auto;min-width:0}
-.nrow .nname{font-family:'VT323',monospace;font-size:16px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nrow .nmeta{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
-.nrow input[type=number]{width:56px;padding:3px 4px;font-size:10px}
-.nrow .ndel{border:none;background:none;color:var(--acc);font-size:13px;line-height:1;padding:2px 4px;cursor:pointer}
-.nrow .ndel:hover{background:var(--acc);color:#fff;outline:2px solid var(--acc)}
-.note-rail .nfld{display:flex;flex-direction:column;gap:2px}
+.note-rail .nfld{display:flex;flex-direction:column;gap:3px}
+.note-empty{padding:16px 8px;font-size:10px;letter-spacing:.04em;color:var(--mute);line-height:1.7}
+.note-form{display:flex;flex-direction:column;gap:12px;padding:4px 2px}
+.note-form label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.note-form .nm{font-family:'VT323',monospace;font-size:22px;line-height:1}
+.note-form .row{display:flex;align-items:center;gap:8px}
+.note-form input[type=range]{width:118px}
+.note-form input[type=number]{width:64px}
+.note-form .nswatch{width:28px;height:28px;border:2px solid var(--ink);cursor:pointer;padding:0}
+.note-form .nswatch:hover{outline:2px solid var(--acc);outline-offset:1px}
 @media(max-width:900px){
   .stage-row{flex-wrap:wrap}
   .note-rail{flex:1 1 100%;max-height:none}
@@ -251,15 +248,22 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
 
     <aside class="note-rail" id="noteRail">
       <div class="rail-head">
-        <span class="mono-lbl">NOTE INSPECTOR</span>
+        <span class="mono-lbl">NOTE SETTINGS</span>
         <div class="rail-hct">
-          <span class="mono-lbl" id="noteCount">0 NOTES</span>
-          <button class="sm" id="noteRailClose" title="hide the note inspector">CLOSE</button>
+          <button class="sm" id="noteRailClose" title="hide the note panel">CLOSE</button>
         </div>
       </div>
-      <div class="rail-list note-list" id="noteList"></div>
-      <div class="rail-foot">
-        <span class="hint">each note has its own colour &amp; frequency &mdash; click a row to select it &middot; click the swatch to recolour</span>
+      <div class="note-empty" id="noteEmpty">click a note on the grid to edit its sound, length and colour</div>
+      <div class="note-form" id="noteForm" hidden>
+        <div class="nfld"><label>Colour</label><button class="nswatch" id="nColor" title="click to change colour"></button></div>
+        <div class="nfld"><label>Sound</label><span class="nm" id="nPitch">&mdash;</span></div>
+        <div class="nfld"><label>Frequency (Hz)</label>
+          <div class="row"><input type="range" id="nFreqR" min="20" max="4000" step="1"><input type="number" id="nFreq" min="20" max="12000" step="1"></div>
+        </div>
+        <div class="nfld"><label>Start step</label><input type="number" id="nStep" min="1"></div>
+        <div class="nfld"><label>Length (steps)</label><input type="number" id="nLen" min="1" step="1"></div>
+        <div class="nfld"><label>Volume</label><div class="row"><input type="range" id="nVol" min="0" max="100" value="100"><output id="nVolOut">100</output></div></div>
+        <button class="sm" id="nDel">DELETE NOTE</button>
       </div>
     </aside>
   </div>
@@ -281,16 +285,6 @@ pre{color:#e8e8e4;font-family:'Space Mono',monospace;font-size:11.5px;line-heigh
     <input type="file" id="plImportFile" accept=".json,.b1p" style="display:none">
   </aside>
 
-
-  <div class="panel note-panel" id="notePanel">
-    <span class="mono-lbl">Selected note</span>
-    <div class="fld"><label>Pitch</label><span class="nm" id="nPitch">—</span></div>
-    <div class="fld"><label>Start step</label><input type="number" id="nStep" min="1"></div>
-    <div class="fld"><label>Length (steps)</label><input type="number" id="nLen" min="1" step="1"></div>
-    <div class="fld"><label>Volume</label><div class="row"><input type="range" id="nVol" min="0" max="100" value="100"><output id="nVolOut">100</output></div></div>
-    <button class="sm" id="nDel">DELETE NOTE</button>
-    <span class="mono-lbl" id="nHint">drag body = move &middot; drag edges = resize &middot; shift+drag = volume &middot; freq &amp; colour in the NOTE INSPECTOR</span>
-  </div>
 
   <div class="panel bottom" style="margin-top:10px">
     <div class="status" id="status">&mdash;</div>
@@ -1360,115 +1354,10 @@ bind('pin', () => { S.pin = Math.max(1, Math.min(48, +$('pin').value || 4)); bui
 $('loopChk').addEventListener('change', () => { S.loop = $('loopChk').checked; reseekRestart(); });
 
 /* ============ NOTE RAIL (side panel) ============ */
-let noteRows = new Map();
-function renderNoteList(){
-  const el = $('noteList');
-  const rail = $('noteRail');
-  if (!el || !rail) return;
-  const cnt = $('noteCount');
-  if (cnt) cnt.textContent = activeNotes.length + (activeNotes.length === 1 ? ' NOTE' : ' NOTES');
-  if (rail.hidden){ noteRows = new Map(); el.innerHTML = ''; return; }
-  noteRows = new Map();
-  el.innerHTML = '';
-  const notes = activeNotes.slice().sort((a, b) => (a.step - b.step) || (a.midi - b.midi));
-  if (!notes.length){
-    const d = document.createElement('div');
-    d.className = 'mono-lbl';
-    d.style.padding = '12px 8px';
-    d.textContent = 'no notes — paint some on the grid';
-    el.appendChild(d);
-    return;
-  }
-  for (const n of notes){
-    const row = document.createElement('div');
-    row.className = 'nrow';
-    const sw = document.createElement('button');
-    sw.className = 'nswatch';
-    sw.title = 'change colour';
-    sw.style.background = noteColor(n.color);
-    const info = document.createElement('div');
-    info.className = 'ninfo';
-    const nm = document.createElement('div');
-    nm.className = 'nname';
-    nm.textContent = noteName(n.midi);
-    const meta = document.createElement('div');
-    meta.className = 'nmeta';
-    const setMeta = () => { meta.textContent = 'step ' + pad2(n.step + 1) + ' · len ' + n.len + ' · ' + Math.round(noteFreq(n)) + ' Hz'; };
-    setMeta();
-    info.appendChild(nm); info.appendChild(meta);
-    const fwrap = document.createElement('div');
-    fwrap.className = 'nfld';
-    const fl = document.createElement('span'); fl.className = 'mono-lbl'; fl.textContent = 'Hz';
-    const fi = document.createElement('input');
-    fi.type = 'number'; fi.className = 'nfreq'; fi.min = '20'; fi.max = '12000'; fi.step = '1';
-    fi.value = Math.round(noteFreq(n));
-    fi.title = 'frequency in Hz';
-    fwrap.appendChild(fl); fwrap.appendChild(fi);
-    const lwrap = document.createElement('div');
-    lwrap.className = 'nfld';
-    const ll = document.createElement('span'); ll.className = 'mono-lbl'; ll.textContent = 'Len';
-    const li = document.createElement('input');
-    li.type = 'number'; li.className = 'nlen'; li.min = '1'; li.step = '1';
-    li.value = n.len; li.title = 'length in steps';
-    lwrap.appendChild(ll); lwrap.appendChild(li);
-    const del = document.createElement('button');
-    del.className = 'ndel'; del.textContent = '\u00d7'; del.title = 'delete note';
-    row.appendChild(sw); row.appendChild(info); row.appendChild(fwrap); row.appendChild(lwrap); row.appendChild(del);
-    el.appendChild(row);
-    noteRows.set(n.id, row);
-
-    row.addEventListener('click', () => {
-      selectedNote = n.id;
-      updateNotePanel(); drawGrid();
-    });
-    sw.addEventListener('click', e => {
-      e.stopPropagation();
-      n.color = (Math.round(n.color) + 1) % PALETTE.length;
-      sw.style.background = noteColor(n.color);
-      drawGrid(); edit();
-    });
-    fi.addEventListener('click', e => e.stopPropagation());
-    fi.addEventListener('input', () => {
-      const v = +fi.value;
-      n.freq = (isFinite(v) && v > 0) ? v : 0;
-      setMeta(); updateStatus(); drawGrid();
-    });
-    fi.addEventListener('change', () => {
-      let f = +fi.value;
-      if (!isFinite(f) || f <= 0){ n.freq = 0; }
-      else { n.freq = f; n.midi = clampM(midiFromFreq(f)); }
-      const nn = activeNotes.find(x => x.id === n.id);
-      updateNotePanel(); drawGrid(); edit();
-      if (nn){ fi.value = Math.round(noteFreq(nn)); }
-    });
-    li.addEventListener('click', e => e.stopPropagation());
-    li.addEventListener('change', () => {
-      const v = clamp(Math.round(+li.value || 1), 1, S.steps - n.step);
-      n.len = v; li.value = v; setMeta(); updateNotePanel(); drawGrid(); edit();
-    });
-    del.addEventListener('click', e => {
-      e.stopPropagation();
-      activeNotes = activeNotes.filter(x => x.id !== n.id);
-      if (selectedNote === n.id) selectedNote = null;
-      updateNotePanel(); updateStatus(); drawGrid(); edit();
-    });
-  }
-  syncNoteList();
-}
-/* lightweight refresh while dragging: update values + selection without rebuilding rows */
-function syncNoteList(){
-  for (const [id, row] of noteRows) row.classList.toggle('sel', id === selectedNote);
-  const n = activeNotes.find(x => x.id === selectedNote);
-  if (!n) return;
-  const row = noteRows.get(selectedNote);
-  if (!row) return;
-  const fi = row.querySelector('input.nfreq');
-  if (fi && document.activeElement !== fi) fi.value = Math.round(noteFreq(n));
-  const li = row.querySelector('input.nlen');
-  if (li && document.activeElement !== li) li.value = n.len;
-}
-function openNoteRail(){ $('noteRail').hidden = false; renderNoteList(); layout(); drawGrid(); }
-function closeNoteRail(){ $('noteRail').hidden = true; renderNoteList(); layout(); drawGrid(); }
+function renderNoteList(){ updateNotePanel(); }
+function syncNoteList(){ updateNotePanel(); }
+function openNoteRail(){ $('noteRail').hidden = false; layout(); drawGrid(); }
+function closeNoteRail(){ $('noteRail').hidden = true; layout(); drawGrid(); }
 $('noteRailBtn').onclick = () => { if ($('noteRail').hidden) openNoteRail(); else closeNoteRail(); };
 $('noteRailClose').onclick = closeNoteRail;
 
@@ -1542,19 +1431,47 @@ function randomize(){
   }
 }
 
-/* ============ NOTE PANEL ============ */
+/* ============ NOTE PANEL (side form) ============ */
 function updateNotePanel(){
-  const panel = $('notePanel');
+  const form = $('noteForm'), empty = $('noteEmpty');
   const n = activeNotes.find(x => x.id === selectedNote);
-  if (!n){ panel.style.display = 'none'; syncNoteList(); return; }
-  panel.style.display = 'flex';
-  $('nPitch').textContent = noteName(n.midi);
+  if (!n){ if (form) form.hidden = true; if (empty) empty.hidden = false; return; }
+  if (empty) empty.hidden = true;
+  if (form) form.hidden = false;
+  const f = Math.round(noteFreq(n));
+  $('nPitch').textContent = noteName(n.midi) + '  ' + f + ' Hz';
+  if ($('nFreq')) $('nFreq').value = f;
+  if ($('nFreqR')) $('nFreqR').value = clamp(f, 20, 4000);
+  if ($('nColor')) $('nColor').style.background = noteColor(n.color);
   $('nStep').value = n.step + 1;
   $('nLen').value = n.len;
   $('nVol').value = Math.round((n.vol == null ? 1 : n.vol) * 100);
   $('nVolOut').textContent = Math.round((n.vol == null ? 1 : n.vol) * 100);
-  syncNoteList();
 }
+function applyNoteFreq(src, snap){
+  const n = activeNotes.find(x => x.id === selectedNote);
+  if (!n) return;
+  const f = +src.value;
+  if (!isFinite(f) || f <= 0) n.freq = 0;
+  else n.freq = f;
+  if (snap) n.midi = clampM(midiFromFreq(noteFreq(n)));
+  const rf = Math.round(noteFreq(n));
+  $('nPitch').textContent = noteName(n.midi) + '  ' + rf + ' Hz';
+  if (src.id === 'nFreqR'){ $('nFreq').value = rf; }
+  else if ($('nFreqR')){ $('nFreqR').value = clamp(rf, 20, 4000); }
+  if ($('nColor')) $('nColor').style.background = noteColor(n.color);
+  updateStatus(); drawGrid();
+}
+$('nFreq').addEventListener('input', () => applyNoteFreq($('nFreq'), false));
+$('nFreqR').addEventListener('input', () => applyNoteFreq($('nFreqR'), false));
+$('nFreq').addEventListener('change', () => { applyNoteFreq($('nFreq'), true); edit(); });
+$('nFreqR').addEventListener('change', () => { applyNoteFreq($('nFreqR'), true); edit(); });
+$('nColor').addEventListener('click', () => {
+  const n = activeNotes.find(x => x.id === selectedNote);
+  if (!n) return;
+  n.color = (Math.round(n.color) + 1) % PALETTE.length;
+  updateNotePanel(); drawGrid(); edit();
+});
 $('nStep').addEventListener('change', () => {
   const n = activeNotes.find(x => x.id === selectedNote);
   if (!n) return;
