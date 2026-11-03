@@ -177,6 +177,19 @@ const TEST = `
     simpleMode = true; applyUiMode();
     ok('simple mode adds simple class', document.body.classList.contains('simple') === true);
 
+    // device serial protocol (Play on device)
+    S.steps = 32; S.bpm = 150; S.gate = .85; S.loop = true;
+    activeNotes = [
+      { id: nextNoteId++, step: 2, len: 1, midi: 60, vol: 1, freq: 0, color: 0 },
+      { id: nextNoteId++, step: 4, len: 2, midi: 64, vol: 1, freq: 440, color: 1 },
+      { id: nextNoteId++, step: 6, len: 1, midi: 67, vol: 0, freq: 0, color: 2 }
+    ];
+    const dl = deviceSongLines();
+    ok('device protocol header', dl[0] === 'RESET' && dl[1] === 'BPM 150' && dl[2] === 'STEPS 32' && dl[3] === 'GATE 85', dl.slice(0, 4).join('|'));
+    ok('device protocol skips silent notes', dl.filter(l => /^N /.test(l)).length === 2, dl.filter(l => /^N /.test(l)).length);
+    ok('device protocol keeps custom freq', dl.indexOf('N 4 2 440') > -1, dl.join('|'));
+    ok('device protocol play line', dl[dl.length - 1] === 'PLAY 1', dl[dl.length - 1]);
+
     // rotate never overflows
     S.steps = 4;
     activeNotes = [{ id: nextNoteId++, step: 3, len: 3, midi: 60, vol: 1, freq: 0, color: 0 }];

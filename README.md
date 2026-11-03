@@ -6,6 +6,53 @@
 
 The app opens in **Simple** mode, made for young kids: big buttons, friendly labels (Speed, Song length), a visual colour palette, and a big −/+ length stepper. Technical controls (tempo BPM fine-tuning, gate, duty, pin, rotate/octave, project library, `.ino`/`.json`/import/code export) are hidden until you press **⚙ ADVANCED** in the header. The toggle is remembered in `localStorage`, and everything stays fully available in Advanced mode.
 
+## Play on the real ESP32 (USB)
+
+The `firmware/` folder contains a ready-to-flash **device player** for an ESP32 WROOM dev board. It talks to the studio over USB serial, so no WiFi credentials are needed.
+
+**Wiring**
+
+| Part | ESP32 pin |
+| --- | --- |
+| Passive piezo/buzzer `+` | **D4** (GPIO4) |
+| Passive piezo/buzzer `−` | **GND** |
+| Push button leg 1 | **D14** (GPIO14) |
+| Push button leg 2 | **GND** |
+
+The button uses the internal pull-up, so no resistor is needed. Press it to **play/stop** the last song; with no song loaded it makes a short test beep.
+
+**Flash**
+
+```bash
+pio run -d firmware                              # build
+pio run -d firmware -t upload --upload-port COM4 # flash (use your port)
+```
+
+If upload fails, hold the **BOOT** button on the board while it connects. A 1200 Hz boot chirp confirms the buzzer wiring.
+
+**Use it**
+
+1. Open `index.html` in **Chrome or Edge** (Web Serial is not available in Firefox/Safari).
+2. Press **▶ PLAY ON DEVICE** in the header and pick the ESP32's COM port.
+3. The studio sends the current song and the ESP32 plays it on D4, looping if **LOOP** is on.
+4. The button turns into **■ STOP DEVICE**; press it again to stop.
+
+If you serve the page from GitHub Pages (HTTPS) Web Serial still works. If you use `file://` and your browser hides Web Serial, run a tiny local server (`python -m http.server`) and open `http://localhost:8000`.
+
+**Serial protocol (115200 baud, one command per line)**
+
+```
+PING                     -> PONG
+RESET                    -> clear song
+BPM <20..400>
+STEPS <1..512>
+GATE <5..100>
+N <step> <len> <freqHz>  -> add note
+PLAY <0|1>               -> start (1 = loop)
+STOP
+BEEP <freqHz> <ms>
+```
+
 ## What it does
 
 - Piano-roll step editor for a **passive piezo / passive buzzer** (a real speaker tone, not a fixed-pitch active beeper).

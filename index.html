@@ -27,6 +27,7 @@ body{
 
 /* ---------- HEADER ---------- */
 header{display:flex;align-items:stretch;gap:0;border:2px solid var(--ink);background:var(--paper);margin-bottom:10px}
+#uiBtn{flex:0 0 auto;align-self:center;margin:0 12px}
 .brand{display:flex;align-items:center;gap:10px;padding:10px 14px;border-right:2px solid var(--ink);flex:0 0 auto}
 .mark{width:34px;height:34px;border:2px solid var(--ink);background:#fff;display:block;flex:0 0 auto}
 h1{font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1}
@@ -171,7 +172,9 @@ body.simple input[type=range]::-webkit-slider-runnable-track{height:8px}
 body.simple input[type=range]::-webkit-slider-thumb{width:24px;height:28px;margin-top:-11px}
 body.simple input[type=range]::-moz-range-track{height:8px}
 body.simple input[type=range]::-moz-range-thumb{width:22px;height:26px}
+body.simple #lenLcd{display:none}
 body.simple .lcd b{font-size:32px}
+body.simple .lcd{min-width:116px;padding:5px 8px}
 body.simple .hint{font-size:11px;line-height:2.1}
 body.simple .chk{font-size:12px;padding:11px 13px}
 body.simple .rail-head .mono-lbl{font-size:12px}
@@ -226,12 +229,13 @@ body.simple .stepper button.sm{width:48px;padding:10px 0;font-size:22px;line-hei
     <div class="transport">
       <button id="playBtn" class="pri">&#9654; PLAY</button>
       <button id="stopBtn" class="sm">&#9632; STOP</button>
+      <button id="devPlayBtn" class="sm" title="send the song to the ESP32 over USB and play it on the real buzzer">&#9654; PLAY ON DEVICE</button>
       <label class="chk"><input type="checkbox" id="loopChk" checked> LOOP</label>
       <div class="spacer"></div>
       <div class="lcd" id="posLcd"><b>01/32</b><i>STEP</i></div>
       <div class="lcd" id="lenLcd"><b>1.71s</b><i>LENGTH</i></div>
-      <button id="uiBtn" class="sm" title="switch between Simple and Advanced">&#9881; ADVANCED</button>
     </div>
+    <button id="uiBtn" class="sm" title="switch between Simple and Advanced">&#9881; ADVANCED</button>
   </header>
 
   <div class="panel controls">
@@ -1458,6 +1462,87 @@ function edit(){ refreshAudio(); markDirty(); }
 
 $('playBtn').onclick = () => { togglePlay(); };
 $('stopBtn').onclick = () => stop();
+
+/* ============ DEVICE PLAYBACK (Web Serial -> ESP32 firmware) ============ */
+let devPort = null, devWriter = null, devPlaying = false, devBusy = false, devFresh = false;
+
+/* protocol lines understood by firmware/src/main.cpp */
+function deviceSongLines(){
+  const lines = [
+    'RESET',
+    'BPM ' + Math.round(S.bpm),
+    'STEPS ' + Math.round(S.steps),
+    'GATE ' + Math.round(S.gate * 100)
+  ];
+  const notes = activeNotes.slice().sort((a, b) => (a.step - b.step) || (a.midi - b.midi));
+  for (const n of notes){
+    if (n.vol === 0) continue;
+    const f = Math.max(0, Math.min(65535, Math.round(noteFreq(n))));
+    lines.push('N ' + Math.round(n.step) + ' ' + Math.max(1, Math.round(n.len)) + ' ' + f);
+  }
+  lines.push('PLAY ' + (S.loop ? 1 : 0));
+  return lines;
+}
+function syncDevBtn(){
+  const b = $('devPlayBtn');
+  if (!b) return;
+  b.innerHTML = devPlaying ? '&#9632; STOP DEVICE' : '&#9654; PLAY ON DEVICE';
+  b.classList.toggle('on', devPlaying);
+}
+const devSleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function openDevice(){
+  if (!('serial' in navigator)) throw new Error('Web Serial needs Chrome or Edge');
+  if (devPort && devPort.readable) return;
+  if (!devPort) devPort = await navigator.serial.requestPort();
+  await devPort.open({ baudRate: 115200 });
+  devWriter = devPort.writable.getWriter();
+  devFresh = true;                 /* opening the port usually resets the ESP32 */
+}
+async function sendDevice(lines){
+  if (!devWriter) throw new Error('device is not connected');
+  const bytes = new TextEncoder().encode(lines.join('\n') + '\n');
+  await devWriter.write(bytes);
+}
+async function deviceToggle(){
+  if (devBusy) return;
+  devBusy = true;
+  const btn = $('devPlayBtn');
+  if (btn) btn.disabled = true;
+  try {
+    if (devPlaying){
+      await sendDevice(['STOP']);
+      devPlaying = false;
+      toast('device stopped');
+    } else {
+      await openDevice();
+      if (devFresh){ await devSleep(1500); devFresh = false; }  /* wait for boot after opening */
+      await sendDevice(deviceSongLines());
+      devPlaying = true;
+      toast('playing on the ESP32');
+    }
+  } catch (err){
+    devPlaying = false;
+    devWriter = null;
+    try { if (devPort) await devPort.close(); } catch (e) {}
+    devPort = null;
+    toast('device: ' + (err && err.message ? err.message : err), true);
+  } finally {
+    devBusy = false;
+    if (btn) btn.disabled = false;
+    syncDevBtn();
+  }
+}
+$('devPlayBtn').onclick = deviceToggle;
+try {
+  if ('serial' in navigator) navigator.serial.addEventListener('disconnect', e => {
+    if (e.target === devPort){
+      devPort = null; devWriter = null; devPlaying = false; devFresh = false;
+      syncDevBtn();
+      toast('device unplugged', true);
+    }
+  });
+} catch (e) {}
 $('clearBtn').onclick = () => {
   activeNotes = []; selectedNote = null; updateNotePanel();
   edit(); toast('pattern cleared');
